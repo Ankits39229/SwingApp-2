@@ -200,13 +200,4 @@ public class Firewall extends JPanel {
         return new java.text.SimpleDateFormat("HH:mm:ss").format(new Date());
     }
 
-//    public static void main(String[] args) {
-//        SwingUtilities.invokeLater(() -> {
-//            JFrame frame = new JFrame("Firewall UI");
-//            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//            frame.setSize(800, 600);
-//            frame.setContentPane(new Firewall());
-//            frame.setVisible(true);
-//        });
-//    }
 }

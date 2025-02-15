@@ -15,6 +15,7 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.Objects;
 
 
 public class Troubleshoot {
@@ -105,7 +106,7 @@ public class Troubleshoot {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(PANEL_BACKGROUND);
-        panel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 20, 20, 20));
 
         // Assign different emojis or fallback image icons based on the index
         String emoji;
@@ -147,7 +148,6 @@ public class Troubleshoot {
         JPanel iconPanel = new JPanel();
         iconPanel.setBackground(PANEL_BACKGROUND);
         iconPanel.add(iconLabel);
-
 
         JButton titleButton = new JButton(title);
         titleButton.setForeground(TEXT_COLOR);
@@ -491,7 +491,7 @@ public class Troubleshoot {
                     protected Void doInBackground() throws Exception {
                         try {
                             // Using a relative path to the .bat file
-                            String batFilePath = "Bat_Scripts/FileSystem.bat";
+                            String batFilePath = "Bat_Scripts/FileSystem.bat"; // Relative path to the .bat file
 
                             // Create the full path to the .bat file based on the current directory
                             File batFile = new File(batFilePath);

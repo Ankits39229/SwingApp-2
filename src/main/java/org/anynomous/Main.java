@@ -44,7 +44,7 @@ public class Main extends JFrame {
         mainContentPanel.add(new Audit(), "Audit");
         mainContentPanel.add(new Remediate(), "Remediate");
         mainContentPanel.add(new Malware(), "Malware");
-        mainContentPanel.add(new Settings(), "Settings");
+        mainContentPanel.add(new Assistant(), "Assistant");
 
         // Modern system look and feel
         try {
@@ -101,7 +101,7 @@ public class Main extends JFrame {
                 {"Audit", "Audit"},
                 {"Remediate", "Remediate"},
                 {"Malware", "Malware"},
-                {"Settings", "Settings"}
+                {"Assistant", "Assistant"}
         };
 
         for (String[] item : menuItems) {
