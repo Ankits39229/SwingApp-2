@@ -16,6 +16,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.Objects;
+import java.awt.geom.RoundRectangle2D;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.awt.geom.RoundRectangle2D;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 
 public class Troubleshoot {
@@ -225,91 +235,142 @@ public class Troubleshoot {
 
 
 
-    public static class SystemPerformancePanel extends BaseSidebarPanel {
+
+    public class SystemPerformancePanel extends BaseSidebarPanel {
+        // Modern color scheme
+        private static final Color PANEL_BACKGROUND = new Color(30, 30, 30);
+        private static final Color BUTTON_COLOR = new Color(56, 132, 255);
+        private static final Color BUTTON_HOVER_COLOR = new Color(25, 113, 255);
+        private static final Color SECONDARY_TEXT_COLOR = new Color(107, 119, 140);
+        private static final Color OUTPUT_BACKGROUND = new Color(30, 30, 30);
+        private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 14);
+        private static final Font STATUS_FONT = new Font("Segoe UI", Font.PLAIN, 13);
+        private static final int CORNER_RADIUS = 8;
+
         public SystemPerformancePanel() {
             super("System Performance");
+            setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         }
 
         protected JPanel createContentPanel() {
             JPanel contentPanel = new JPanel(new BorderLayout(0, 20));
             contentPanel.setBackground(PANEL_BACKGROUND);
-            contentPanel.add(this.createScanSection(), BorderLayout.CENTER);
-//            contentPanel.add(this.createInfoArea(), BorderLayout.CENTER);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            contentPanel.add(createScanSection(), BorderLayout.CENTER);
             return contentPanel;
         }
 
         private JPanel createScanSection() {
-            JPanel scanPanel = new JPanel(new BorderLayout(0, 10));
+            JPanel scanPanel = new JPanel(new BorderLayout(0, 15));
             scanPanel.setBackground(PANEL_BACKGROUND);
 
-            // Create the scan button
-            JButton scanButton = new JButton("Quick Scan");
-            scanButton.setPreferredSize(new Dimension(200, 40));
-            scanButton.setBackground(BUTTON_COLOR);
+            // Create the scan button with rounded corners
+            JButton scanButton = new JButton("Quick Scan") {
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(getModel().isPressed() ? BUTTON_HOVER_COLOR : BUTTON_COLOR);
+                    g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), CORNER_RADIUS, CORNER_RADIUS));
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+            scanButton.setPreferredSize(new Dimension(200, 45));
+            scanButton.setFont(BUTTON_FONT);
             scanButton.setForeground(Color.WHITE);
             scanButton.setFocusPainted(false);
             scanButton.setBorderPainted(false);
+            scanButton.setContentAreaFilled(false);
             scanButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-            // Create a scrollable output area
-            JTextArea outputArea = new JTextArea(10, 30); // Adjust rows and columns as needed
+            // Create a styled output area
+            JTextArea outputArea = new JTextArea(10, 30);
             outputArea.setEditable(false);
-            outputArea.setBackground(PANEL_BACKGROUND);
+            outputArea.setBackground(OUTPUT_BACKGROUND);
             outputArea.setForeground(SECONDARY_TEXT_COLOR);
             outputArea.setWrapStyleWord(true);
             outputArea.setLineWrap(true);
+            outputArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            outputArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-            JScrollPane scrollPane = new JScrollPane(outputArea);
-            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-            scanPanel.add(scrollPane, BorderLayout.CENTER);
+            // Create a custom scrollPane with rounded corners
+            JScrollPane scrollPane = new JScrollPane(outputArea) {
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(OUTPUT_BACKGROUND);
+                    g2.fill(new RoundRectangle2D.Float(0, 0, getWidth()-1, getHeight()-1, CORNER_RADIUS, CORNER_RADIUS));
+                    g2.dispose();
+                }
+            };
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(230, 233, 238), 1),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ));
 
-            // Create the status label
+            // Create the status label with custom styling
             JLabel statusLabel = new JLabel("Ready to scan");
             statusLabel.setForeground(SECONDARY_TEXT_COLOR);
             statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            statusLabel.setFont(STATUS_FONT);
+            statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
 
+            // Add scan button functionality
             scanButton.addActionListener(new ActionListener() {
-                @Override
                 public void actionPerformed(ActionEvent e) {
+                    scanButton.setEnabled(false);
                     scanButton.setText("Scanning...");
                     statusLabel.setText("Scan in progress...");
-                    outputArea.setText(""); // Clear the output area before starting a new scan
+                    outputArea.setText("");
 
-                    SwingUtilities.invokeLater(() -> {
-                        try {
-                            ProcessBuilder processBuilder = new ProcessBuilder("python", "PythonScripts/clean/temp.py");
-                            Process process = processBuilder.start();
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    SwingUtilities.invokeLater(new Runnable() {
+                        public void run() {
+                            try {
+                                ProcessBuilder processBuilder = new ProcessBuilder("python", "PythonScripts/clean/temp.py");
+                                Process process = processBuilder.start();
+                                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-                            StringBuilder output = new StringBuilder();
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                output.append(line).append("\n");
+                                StringBuilder output = new StringBuilder();
+                                String line;
+                                while ((line = reader.readLine()) != null) {
+                                    output.append(line).append("\n");
+                                }
+                                reader.close();
+
+                                scanButton.setEnabled(true);
+                                scanButton.setText("Quick Scan");
+                                if (output.toString().isEmpty()) {
+                                    statusLabel.setText("✓ Scan Complete. No Threats Found.");
+                                    statusLabel.setForeground(new Color(39, 174, 96));
+                                } else {
+                                    outputArea.setText(output.toString());
+                                    statusLabel.setText("⚠ Scan Complete. Issues Found.");
+                                    statusLabel.setForeground(new Color(235, 87, 87));
+                                }
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                statusLabel.setText("⚠ Error: Couldn't complete scan.");
+                                statusLabel.setForeground(new Color(235, 87, 87));
+                                scanButton.setEnabled(true);
                             }
-                            reader.close();
-
-                            scanButton.setText("Quick Scan");
-                            if (output.toString().isEmpty()) {
-                                statusLabel.setText("Scan Complete. No Threats Found.");
-                            } else {
-                                outputArea.setText(output.toString());
-                                statusLabel.setText("Scan Complete.");
-                            }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                            statusLabel.setText("Error: Couldn't complete scan.");
                         }
                     });
                 }
             });
 
-            scanPanel.add(scanButton, BorderLayout.NORTH);
+            // Layout components with proper spacing
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
+            buttonPanel.setBackground(PANEL_BACKGROUND);
+            buttonPanel.add(scanButton);
+
+            scanPanel.add(buttonPanel, BorderLayout.NORTH);
+            scanPanel.add(scrollPane, BorderLayout.CENTER);
             scanPanel.add(statusLabel, BorderLayout.SOUTH);
+
             return scanPanel;
         }
-
     }
-
 
 
 

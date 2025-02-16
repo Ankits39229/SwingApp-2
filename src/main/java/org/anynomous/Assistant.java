@@ -18,8 +18,8 @@ public class Assistant extends JPanel {
     private static final Color SECONDARY_COLOR = new Color(30, 30, 30);
     private static final Color ACCENT_COLOR = new Color(79, 147, 255);
     private static final Color TEXT_COLOR = new Color(245, 245, 245);
-    private static final Color SUCCESS_COLOR = new Color(75, 181, 67);
-    private static final Color ERROR_COLOR = new Color(255, 85, 85);
+//    private static final Color SUCCESS_COLOR = new Color(75, 181, 67);
+//    private static final Color ERROR_COLOR = new Color(255, 85, 85);
     private static final Color USER_MESSAGE_COLOR = new Color(187, 187, 187);
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font HEADER_FONT = new Font("Segoe UI", Font.BOLD, 26);
@@ -95,13 +95,6 @@ public class Assistant extends JPanel {
 
         chatPanel.add(scrollPane, BorderLayout.CENTER);
 
-//        progressBar = new JProgressBar();
-//        progressBar.setForeground(ACCENT_COLOR);
-//        progressBar.setBackground(SECONDARY_COLOR);
-//        progressBar.setBorder(new EmptyBorder(2, 0, 0, 0));
-//        progressBar.setVisible(false);
-//        chatPanel.add(progressBar, BorderLayout.SOUTH);
-
         return chatPanel;
     }
 
@@ -174,11 +167,13 @@ public class Assistant extends JPanel {
 
     private void initializeActions() {
         actions = new HashMap<>();
-        actions.put("clear temp files", () -> executePythonScript("clear_temp.py"));
-        actions.put("free up space", () -> executePythonScript("clear_temp.py"));
-        actions.put("info", () -> executeBatchScript("Browser.bat")); // Updated to use batch script
-        actions.put("check disk space", () -> executePythonScript("disk_space.py"));
-        actions.put("memory status", () -> executePythonScript("memory_status.py"));
+        actions.put("clear cache", () -> executePythonScript("temp.py"));
+        actions.put("network", () -> executeBatchScript("Network.bat"));
+        actions.put("bsod", () -> executeBatchScript("BSOD.bat")); // Updated to use batch script
+        actions.put("audio", () -> executeBatchScript("Audio.bat"));
+        actions.put("bluetooth", () -> executeBatchScript("Bluetooth.bat"));
+        actions.put("browser", () -> executeBatchScript("Browser.bat")); // Updated to use batch script
+
         actions.put("help", this::showHelp);
         actions.put("clear chat", this::clearChat);
         actions.put("network info", () -> executePythonScript("2.1.py"));
@@ -320,19 +315,27 @@ public class Assistant extends JPanel {
     private void showHelp() {
         String helpText = """
             🔍 Available commands :
-            ├─ clear temp files: Removes temporary files 
-            ├─ system info: Shows system information 
-            ├─ check disk space: Displays available disk space 
-            ├─ memory status: Shows memory usage 
-            ├─ network info: Displays network configuration 
-            ├─ clear chat: Clears the chat history
-            └─ help: Shows this help message
+            
+            ├─ clear cache : Removes temporary files (run this application as Administrator for better result)
+            
+            ├─ network : To troubleshoot the network (if your wifi or network device is not working properly) 
+            
+            ├─ bsod : To troubleshoot system files (if you are facing blue screen error continuously) 
+            
+            ├─ audio : To troubleshoot audio (if you have problem in audio output) 
+            
+            ├─ bluetooth : To troubleshoot bluetooth (if you have problem in bluetooth device connection) 
+            
+            ├─ browser : To clear browser cache
+            
+            └─ help : Shows this help message
             """;
         appendMessage("Assistant", helpText, assistantStyle);
     }
 }
 
 class ModernScrollBarUI extends BasicScrollBarUI {
+
     @Override
     protected void configureScrollBarColors() {
         this.thumbColor = new Color(79, 147, 255, 100);
