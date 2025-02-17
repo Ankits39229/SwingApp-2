@@ -46,6 +46,8 @@ public class Main extends JFrame {
         mainContentPanel.add(new Malware(), "Malware");
         mainContentPanel.add(new Assistant(), "Assistant");
 
+
+
         // Modern system look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
