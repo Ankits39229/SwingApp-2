@@ -23,6 +23,16 @@
         <maven-surefire-plugin.version>3.2.3</maven-surefire-plugin.version>
     </properties>
 
+<!--    <?xml version="1.0" encoding="utf-8"?>-->
+<!--    <network-security-config>-->
+<!--        <domain-config cleartextTrafficPermitted="true">-->
+<!--            <domain includeSubdomains="true">14.195.19.210</domain>-->
+<!--        </domain-config>-->
+<!--    </network-security-config>-->
+
+
+
+
     <dependencies>
         <!-- Logging -->
         <dependency>
@@ -44,6 +54,21 @@
             <groupId>com.formdev</groupId>
             <artifactId>flatlaf</artifactId>
             <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>6.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkjava</groupId>
+            <artifactId>spark-core</artifactId>
+            <version>2.9.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
         </dependency>
 
 

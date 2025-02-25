@@ -1,461 +1,508 @@
 package main.java.org.anynomous;
 
+import com.formdev.flatlaf.FlatDarkLaf;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import javax.swing.border.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Home extends JPanel {
-    // Color scheme
-    private static final Color BACKGROUND_COLOR = new Color(17, 23, 33);
-    private static final Color CARD_BACKGROUND = new Color(27, 33, 43);
-    private static final Color GRADIENT_START = new Color(32, 87, 209);
-    private static final Color GRADIENT_END = new Color(66, 139, 247);
-    private static final Color TEXT_COLOR = new Color(245, 245, 245);
-    private static final Color SECONDARY_TEXT = new Color(179, 185, 198);
-    private static final Color BORDER_COLOR = new Color(45, 55, 72);
+    // Modern dark theme colors
+    private static final Color ACCENT_COLOR = new Color(82, 145, 255);
+    private static final Color BACKGROUND_COLOR = new Color(30, 30, 30);
+    private static final Color CARD_BACKGROUND = new Color(45, 45, 45);
+    private static final Color SUCCESS_COLOR = new Color(46, 160, 67);
+    private static final Color WARNING_COLOR = new Color(210, 153, 34);
+    private static final Color ERROR_COLOR = new Color(248, 81, 73);
+    private static final Color TEXT_COLOR = new Color(230, 230, 230);
+    private static final Color BORDER_COLOR = new Color(60, 60, 60);
 
-    private JButton scanButton;
-    private JProgressBar progressBar;
-    private JTextArea outputArea;
-    private JLabel statusLabel;
-    private Timer pulseTimer;
-    private float pulseAlpha = 0.0f;
-    private boolean pulsing = false;
+    private final ExecutorService executorService;
+    private JLabel lastScanLabel;
+    private  JTabbedPane tabbedPane;
+    private  JTextArea outputArea;
+    private  Timer updateTimer;
+
 
     public Home() {
-        setBackground(BACKGROUND_COLOR);
-        setLayout(new BorderLayout(30, 30));
-        setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
-
-        // Header Section with Gradient
-        add(createHeaderPanel(), BorderLayout.NORTH);
-
-        // Main Content
-        add(createMainPanel(), BorderLayout.CENTER);
-
-        // Initialize pulse animation
-        setupPulseAnimation();
+        executorService = Executors.newFixedThreadPool(4);
+        setupMainPanel();
+        initializeComponents();
+        initializeTabs();
+        setupGlobalStyle();
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JGradientPanel(GRADIENT_START, GRADIENT_END);
-        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
-        headerPanel.setBorder(new CompoundBorder(
-                new RoundedBorder(10, BORDER_COLOR),
-                new EmptyBorder(25, 25, 25, 25)
+    private void setupMainPanel() {
+        setLayout(new BorderLayout());
+        setBorder(new EmptyBorder(20, 20, 20, 20));
+        setBackground(BACKGROUND_COLOR);
+    }
+
+    private void initializeComponents() {
+        // Initialize tabbed pane with modern styling
+        tabbedPane = createModernTabbedPane();
+
+        // Create modern output console
+        outputArea = createOutputConsole();
+        JScrollPane outputScrollPane = createModernScrollPane(outputArea);
+        outputScrollPane.setPreferredSize(new Dimension(0, 200));
+
+        // Setup main panel with components
+        JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
+        mainPanel.setBackground(BACKGROUND_COLOR);
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+        mainPanel.add(outputScrollPane, BorderLayout.SOUTH);
+        add(mainPanel, BorderLayout.CENTER);
+
+        // Initialize and start update timer
+        updateTimer = new Timer(1000, e -> updateLastScanTime());
+        updateTimer.start();
+    }
+
+    private JTabbedPane createModernTabbedPane() {
+        JTabbedPane pane = new JTabbedPane();
+        pane.putClientProperty("JTabbedPane.tabType", "card");
+        pane.putClientProperty("JTabbedPane.showTabSeparators", true);
+        pane.putClientProperty("JTabbedPane.tabAreaAlignment", "leading");
+        pane.putClientProperty("JTabbedPane.minimumTabWidth", 100);
+        pane.putClientProperty("JTabbedPane.tabHeight", 35);
+        return pane;
+    }
+
+    private void setupGlobalStyle() {
+        UIManager.put("Panel.background", BACKGROUND_COLOR);
+        UIManager.put("TextField.background", CARD_BACKGROUND);
+        UIManager.put("TextField.foreground", TEXT_COLOR);
+        UIManager.put("TextField.caretForeground", TEXT_COLOR);
+        UIManager.put("ComboBox.background", CARD_BACKGROUND);
+        UIManager.put("ComboBox.foreground", TEXT_COLOR);
+        UIManager.put("Button.arc", 12);
+        UIManager.put("Component.arc", 12);
+        UIManager.put("ScrollBar.thumb", new Color(60, 60, 60));
+        UIManager.put("ScrollBar.track", CARD_BACKGROUND);
+        UIManager.put("Table.selectionBackground", ACCENT_COLOR);
+        UIManager.put("Table.selectionForeground", TEXT_COLOR);
+    }
+
+    private JScrollPane createModernScrollPane(Component view) {
+        JScrollPane scrollPane = new JScrollPane(view);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(CARD_BACKGROUND);
+        return scrollPane;
+    }
+
+    private JTextArea createOutputConsole() {
+        JTextArea console = new JTextArea();
+        console.setEditable(false);
+        console.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+        console.setBackground(CARD_BACKGROUND);
+        console.setForeground(TEXT_COLOR);
+        console.setBorder(new EmptyBorder(10, 10, 10, 10));
+        return console;
+    }
+
+    private void initializeTabs() {
+        createDashboardTab();
+        createProcessTab();
+        createNetworkTab();
+        createFilesystemTab();
+        createSettingsTab();
+    }
+
+    private void createDashboardTab() {
+        JPanel dashboardPanel = new JPanel(new BorderLayout(15, 15));
+        dashboardPanel.setBackground(BACKGROUND_COLOR);
+        dashboardPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        // Status Cards
+        JPanel statusPanel = new JPanel(new GridLayout(1, 3, 15, 0));
+        statusPanel.setBackground(BACKGROUND_COLOR);
+        addStatusCard(statusPanel, "System Status", "Running", SUCCESS_COLOR);
+        addStatusCard(statusPanel, "Active Monitors", "3/3", ACCENT_COLOR);
+        lastScanLabel = new JLabel("Just now");
+        addStatusCard(statusPanel, "Last Scan", lastScanLabel, Color.GRAY);
+
+        // Action Buttons
+        JPanel actionsPanel = createActionsPanel();
+
+        // Charts
+        JPanel chartsPanel = createChartsPanel();
+
+        // Combine all panels
+        JPanel centerPanel = new JPanel(new BorderLayout(15, 15));
+        centerPanel.setBackground(BACKGROUND_COLOR);
+        centerPanel.add(actionsPanel, BorderLayout.NORTH);
+        centerPanel.add(chartsPanel, BorderLayout.CENTER);
+
+        dashboardPanel.add(statusPanel, BorderLayout.NORTH);
+        dashboardPanel.add(centerPanel, BorderLayout.CENTER);
+
+        tabbedPane.addTab("Dashboard", dashboardPanel);
+    }
+
+    private JPanel createActionsPanel() {
+        JPanel actionsPanel = new JPanel(new GridLayout(2, 2, 15, 15));
+        actionsPanel.setBackground(BACKGROUND_COLOR);
+
+        JButton scanButton = createStyledButton("Run System Scan", "scan");
+        JButton exportButton = createStyledButton("Export Results", "export");
+        JButton settingsButton = createStyledButton("Quick Settings", "settings");
+        JButton helpButton = createStyledButton("Help", "help");
+
+        actionsPanel.add(scanButton);
+        actionsPanel.add(exportButton);
+        actionsPanel.add(settingsButton);
+        actionsPanel.add(helpButton);
+
+        return actionsPanel;
+    }
+
+    private JPanel createChartsPanel() {
+        JPanel chartsPanel = new JPanel(new GridLayout(1, 2, 15, 0));
+        chartsPanel.setBackground(BACKGROUND_COLOR);
+        addChartPanel(chartsPanel, "System Resources");
+        addChartPanel(chartsPanel, "Network Activity");
+        return chartsPanel;
+    }
+
+    private void addChartPanel(JPanel container, String title) {
+        JPanel chartPanel = new JPanel(new BorderLayout(10, 10));
+        chartPanel.setBackground(CARD_BACKGROUND);
+        chartPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_COLOR),
+                new EmptyBorder(15, 15, 15, 15)
         ));
 
-        JLabel iconLabel = createStyledLabel("🛡️", new Font("Segue UI Emoji", Font.PLAIN, 48));
-        JLabel headerLabel = createStyledLabel("Security Scanner", new Font("Segoe UI", Font.BOLD, 32));
-        JLabel subHeaderLabel = createStyledLabel("Advanced System Protection & Threat Detection",
-                SECONDARY_TEXT, new Font("Segoe UI", Font.PLAIN, 16));
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setForeground(TEXT_COLOR);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        headerPanel.add(iconLabel);
-        headerPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-        headerPanel.add(headerLabel);
-        headerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        headerPanel.add(subHeaderLabel);
+        JPanel chartPlaceholder = new JPanel();
+        chartPlaceholder.setBackground(CARD_BACKGROUND);
+        chartPlaceholder.setPreferredSize(new Dimension(0, 200));
 
-        return headerPanel;
+        chartPanel.add(titleLabel, BorderLayout.NORTH);
+        chartPanel.add(chartPlaceholder, BorderLayout.CENTER);
+        container.add(chartPanel);
     }
 
-    private JPanel createMainPanel() {
-        JPanel mainPanel = new RoundedPanel(20, CARD_BACKGROUND);
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBorder(new EmptyBorder(30, 30, 30, 30));
+    private void createProcessTab() {
+        JPanel processPanel = new JPanel(new BorderLayout(15, 15));
+        processPanel.setBackground(BACKGROUND_COLOR);
+        processPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // Status Panel
-        statusLabel = new JLabel("System Ready", new ImageIcon(), JLabel.LEFT);
-        statusLabel.setForeground(SECONDARY_TEXT);
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // Control buttons
+        JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        controlsPanel.setBackground(BACKGROUND_COLOR);
+        JButton refreshButton = createStyledButton("Refresh Processes", "refresh");
+        JButton killButton = createStyledButton("End Process", "kill");
+        killButton.setBackground(ERROR_COLOR);
+        controlsPanel.add(refreshButton);
+        controlsPanel.add(killButton);
 
-        // Control Panel - Modified to use better layout
-        JPanel controlPanel = new JPanel() {
-            @Override
-            public Dimension getMaximumSize() {
-                Dimension max = super.getMaximumSize();
-                Dimension pref = super.getPreferredSize();
-                return new Dimension(max.width, pref.height);
-            }
+        // Process table
+        String[] columnNames = {"PID", "Process Name", "CPU %", "Memory", "Status"};
+        Object[][] data = {
+                {"1234", "System", "0.1%", "50MB", "Running"},
+                {"5678", "User Process", "2.3%", "150MB", "Running"}
         };
-        controlPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        controlPanel.setOpaque(false);
-        controlPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JTable processTable = createStyledTable(data, columnNames);
+        JScrollPane tableScroll = createModernScrollPane(processTable);
 
-        scanButton = createGradientButton("Scan Now");
-        progressBar = createStyledProgressBar();
+        processPanel.add(controlsPanel, BorderLayout.NORTH);
+        processPanel.add(tableScroll, BorderLayout.CENTER);
 
-        // Add components to control panel with proper spacing
-        controlPanel.add(Box.createHorizontalStrut(5)); // Add left padding
-        controlPanel.add(scanButton);
-        controlPanel.add(Box.createHorizontalStrut(10)); // Space between button and progress bar
-        controlPanel.add(progressBar);
-
-        // Output Panel
-        JPanel outputPanel = new RoundedPanel(15, new Color(22, 28, 38));
-        outputPanel.setLayout(new BorderLayout());
-        outputPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        outputPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        outputArea = createStyledOutputArea();
-        JScrollPane scrollPane = new JScrollPane(outputArea);
-        scrollPane.setBorder(null);
-        scrollPane.getViewport().setBackground(new Color(22, 28, 38));
-
-        outputPanel.add(scrollPane);
-
-        // Add all components with proper spacing
-        mainPanel.add(statusLabel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        mainPanel.add(controlPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        mainPanel.add(outputPanel);
-
-        return mainPanel;
+        tabbedPane.addTab("Processes", processPanel);
     }
 
-    private JLabel createStyledLabel(String text, Font font) {
-        JLabel label = new JLabel(text);
-        label.setFont(font);
+    private void createNetworkTab() {
+        JPanel networkPanel = new JPanel(new BorderLayout(15, 15));
+        networkPanel.setBackground(BACKGROUND_COLOR);
+        networkPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        // Control buttons
+        JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        controlsPanel.setBackground(BACKGROUND_COLOR);
+        JButton scanButton = createStyledButton("Scan Network", "network_scan");
+        JButton blockButton = createStyledButton("Block Connection", "block");
+        blockButton.setBackground(WARNING_COLOR);
+        controlsPanel.add(scanButton);
+        controlsPanel.add(blockButton);
+
+        // Network table
+        String[] columnNames = {"Source", "Destination", "Protocol", "Status", "Bandwidth"};
+        Object[][] data = {
+                {"192.168.1.1:80", "10.0.0.1:443", "TCP", "Active", "1.2 MB/s"},
+                {"192.168.1.1:443", "8.8.8.8:53", "UDP", "Active", "0.1 MB/s"}
+        };
+        JTable networkTable = createStyledTable(data, columnNames);
+        JScrollPane tableScroll = createModernScrollPane(networkTable);
+
+        networkPanel.add(controlsPanel, BorderLayout.NORTH);
+        networkPanel.add(tableScroll, BorderLayout.CENTER);
+
+        tabbedPane.addTab("Network", networkPanel);
+    }
+
+    private void createFilesystemTab() {
+        JPanel filesystemPanel = new JPanel(new BorderLayout(15, 15));
+        filesystemPanel.setBackground(BACKGROUND_COLOR);
+        filesystemPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        // Control buttons
+        JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        controlsPanel.setBackground(BACKGROUND_COLOR);
+        JButton scanButton = createStyledButton("Scan Files", "file_scan");
+        JButton analyzeButton = createStyledButton("Analyze Changes", "analyze");
+        controlsPanel.add(scanButton);
+        controlsPanel.add(analyzeButton);
+
+        // Filesystem table
+        String[] columnNames = {"Path", "Size", "Modified", "Permissions", "Status"};
+        Object[][] data = {
+                {"/usr/bin", "1.2GB", "2024-02-17", "rwxr-xr-x", "Secure"},
+                {"/etc", "85MB", "2024-02-17", "rwxr-xr--", "Warning"}
+        };
+        JTable filesystemTable = createStyledTable(data, columnNames);
+        JScrollPane tableScroll = createModernScrollPane(filesystemTable);
+
+        filesystemPanel.add(controlsPanel, BorderLayout.NORTH);
+        filesystemPanel.add(tableScroll, BorderLayout.CENTER);
+
+        tabbedPane.addTab("File System", filesystemPanel);
+    }
+
+    private void createSettingsTab() {
+        JPanel settingsPanel = new JPanel(new BorderLayout(15, 15));
+        settingsPanel.setBackground(BACKGROUND_COLOR);
+        settingsPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        // Settings options
+        JPanel optionsPanel = createSettingsOptionsPanel();
+
+        // Buttons panel
+        JPanel buttonPanel = createSettingsButtonPanel();
+
+        settingsPanel.add(optionsPanel, BorderLayout.CENTER);
+        settingsPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        tabbedPane.addTab("Settings", settingsPanel);
+    }
+
+    private JPanel createSettingsOptionsPanel() {
+        JPanel optionsPanel = new JPanel(new GridLayout(8, 1, 10, 10));
+        optionsPanel.setBackground(CARD_BACKGROUND);
+        optionsPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_COLOR),
+                new EmptyBorder(20, 20, 20, 20)
+        ));
+
+        JCheckBox processMonitor = createStyledCheckBox("Enable Process Monitoring", true);
+        JCheckBox networkMonitor = createStyledCheckBox("Enable Network Monitoring", true);
+        JCheckBox filesystemMonitor = createStyledCheckBox("Enable File System Monitoring", true);
+        JPanel processInterval = createIntervalPanel("Process Scan Interval (seconds):", "60");
+        JPanel networkInterval = createIntervalPanel("Network Scan Interval (seconds):", "30");
+        JPanel filesystemInterval = createIntervalPanel("File System Scan Interval (seconds):", "300");
+        JCheckBox notifyOnWarning = createStyledCheckBox("Notify on Warnings", true);
+        JCheckBox notifyOnError = createStyledCheckBox("Notify on Errors", true);
+
+        optionsPanel.add(processMonitor);
+        optionsPanel.add(networkMonitor);
+        optionsPanel.add(filesystemMonitor);
+        optionsPanel.add(processInterval);
+        optionsPanel.add(networkInterval);
+        optionsPanel.add(filesystemInterval);
+        optionsPanel.add(notifyOnWarning);
+//        optionsPanel.add(not
+
+        optionsPanel.add(notifyOnError);
+
+        return optionsPanel;
+    }
+
+    private JPanel createSettingsButtonPanel() {
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setBackground(BACKGROUND_COLOR);
+
+        JButton saveButton = createStyledButton("Save Settings", "save");
+        saveButton.setBackground(SUCCESS_COLOR);
+        JButton resetButton = createStyledButton("Reset to Default", "reset");
+        resetButton.setBackground(WARNING_COLOR);
+
+        buttonPanel.add(resetButton);
+        buttonPanel.add(saveButton);
+
+        return buttonPanel;
+    }
+
+    private JCheckBox createStyledCheckBox(String text, boolean selected) {
+        JCheckBox checkBox = new JCheckBox(text, selected);
+        checkBox.setForeground(TEXT_COLOR);
+        checkBox.setBackground(CARD_BACKGROUND);
+        checkBox.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        return checkBox;
+    }
+
+    private JPanel createIntervalPanel(String labelText, String defaultValue) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        panel.setBackground(CARD_BACKGROUND);
+
+        JLabel label = new JLabel(labelText);
         label.setForeground(TEXT_COLOR);
-        label.setAlignmentX(Component.CENTER_ALIGNMENT);
-        return label;
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+        JTextField textField = new JTextField(defaultValue, 5);
+        textField.setBackground(BACKGROUND_COLOR);
+        textField.setForeground(TEXT_COLOR);
+        textField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        textField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_COLOR),
+                new EmptyBorder(5, 5, 5, 5)
+        ));
+
+        panel.add(label);
+        panel.add(textField);
+        return panel;
     }
 
-    private JLabel createStyledLabel(String text, Color color, Font font) {
-        JLabel label = createStyledLabel(text, font);
-        label.setForeground(color);
-        return label;
+    private JTable createStyledTable(Object[][] data, String[] columnNames) {
+        JTable table = new JTable(data, columnNames);
+        table.setBackground(CARD_BACKGROUND);
+        table.setForeground(TEXT_COLOR);
+        table.setGridColor(BORDER_COLOR);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        table.getTableHeader().setBackground(BACKGROUND_COLOR);
+        table.getTableHeader().setForeground(TEXT_COLOR);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.setRowHeight(30);
+        table.setShowGrid(true);
+        return table;
     }
 
-    private JButton createGradientButton(String text) {
-        JButton button = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    private void addStatusCard(JPanel container, String title, Object value, Color accentColor) {
+        JPanel card = new JPanel(new BorderLayout(5, 5));
+        card.setBackground(CARD_BACKGROUND);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_COLOR),
+                new EmptyBorder(15, 15, 15, 15)
+        ));
 
-                int w = getWidth();
-                int h = getHeight();
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setForeground(TEXT_COLOR);
+        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-                // Draw gradient background
-                GradientPaint gradient = new GradientPaint(
-                        0, 0, GRADIENT_START,
-                        w, 0, GRADIENT_END
-                );
-                g2.setPaint(gradient);
-                g2.fill(new RoundRectangle2D.Float(0, 0, w, h, 15, 15));
+        JLabel valueLabel;
+        if (value instanceof JLabel) {
+            valueLabel = (JLabel) value;
+        } else {
+            valueLabel = new JLabel(value.toString());
+        }
+        valueLabel.setForeground(accentColor);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
 
-                // Draw pulsing effect if active
-                if (pulsing) {
-                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulseAlpha));
-                    g2.setColor(Color.WHITE);
-                    g2.fill(new RoundRectangle2D.Float(0, 0, w, h, 15, 15));
-                }
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(valueLabel, BorderLayout.CENTER);
+        container.add(card);
+    }
 
-                // Draw text
-                g2.setColor(TEXT_COLOR);
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-                int textX = (w - fm.stringWidth(getText())) / 2;
-                int textY = (h - fm.getHeight()) / 2 + fm.getAscent();
-                g2.drawString(getText(), textX, textY);
-
-                g2.dispose();
-            }
-
-            @Override
-            public Dimension getPreferredSize() {
-                // Ensure button has proper height
-                Dimension d = super.getPreferredSize();
-                return new Dimension(220, 45);
-            }
-
-            @Override
-            public Dimension getMinimumSize() {
-                return getPreferredSize();
-            }
-
-            @Override
-            public Dimension getMaximumSize() {
-                return getPreferredSize();
-            }
-        };
-
-        button.setFont(new Font("Segoe UI", Font.BOLD, 15));
+    private JButton createStyledButton(String text, String action) {
+        JButton button = new JButton(text);
+        button.setBackground(ACCENT_COLOR);
         button.setForeground(TEXT_COLOR);
-        button.setBackground(null);
-        button.setBorder(null);
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        button.setBorder(new EmptyBorder(8, 15, 8, 15));
         button.setFocusPainted(false);
-        button.setContentAreaFilled(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        button.addActionListener(new ScanButtonListener());
-        button.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) {
-                startPulsing();
-            }
-            public void mouseExited(MouseEvent e) {
-                stopPulsing();
-            }
-        });
-
+        button.addActionListener(e -> handleButtonAction(action));
         return button;
     }
 
-    private JProgressBar createStyledProgressBar() {
-        JProgressBar bar = new JProgressBar() {
-            private int animationIndex = 0;
-            private Timer animationTimer = new Timer(50, e -> {
-                animationIndex = (animationIndex + 5) % (getWidth() + 100);
-                repaint();
-            });
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Draw background
-                g2.setColor(new Color(45, 55, 72));
-                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 10, 10));
-
-                // Draw progress
-                if (isIndeterminate()) {
-                    // Custom indeterminate animation
-                    int pos = animationIndex;
-                    GradientPaint gradient = new GradientPaint(
-                            pos - 50, 0, GRADIENT_START,
-                            pos + 50, 0, GRADIENT_END
-                    );
-                    g2.setPaint(gradient);
-                    g2.fill(new RoundRectangle2D.Float(pos - 50, 0, 100, getHeight(), 10, 10));
-                } else {
-                    // Normal progress
-                    int width = (int) (getWidth() * (getPercentComplete()));
-                    GradientPaint gradient = new GradientPaint(
-                            0, 0, GRADIENT_START,
-                            width, 0, GRADIENT_END
-                    );
-                    g2.setPaint(gradient);
-                    g2.fill(new RoundRectangle2D.Float(0, 0, width, getHeight(), 10, 10));
-                }
-
-                g2.dispose();
-            }
-
-            @Override
-            public void setIndeterminate(boolean newValue) {
-                boolean oldValue = isIndeterminate();
-                super.setIndeterminate(newValue);
-                if (newValue && !oldValue) {
-                    animationTimer.start();
-                } else if (!newValue && oldValue) {
-                    animationTimer.stop();
-                }
-            }
-        };
-
-        bar.setPreferredSize(new Dimension(200, 8));
-        bar.setMaximumSize(new Dimension(200, 8));
-        bar.setMinimumSize(new Dimension(200, 8));
-        bar.setBorder(null);
-        bar.setVisible(false);
-        return bar;
-    }
-    private JTextArea createStyledOutputArea() {
-        JTextArea area = new JTextArea(15, 45) {
-            @Override
-            public void append(String str) {
-                super.append(str);
-                // Fancy animation for new text
-                Timer timer = new Timer(50, new ActionListener() {
-                    float alpha = 0.0f;
-                    public void actionPerformed(ActionEvent e) {
-                        alpha += 0.1f;
-                        if (alpha >= 1.0f) {
-                            ((Timer)e.getSource()).stop();
-                        }
-                        setForeground(new Color(245, 245, 245, (int)(alpha * 255)));
-                        repaint();
-                    }
-                });
-                timer.start();
-            }
-        };
-
-        area.setEditable(false);
-        area.setForeground(TEXT_COLOR);
-        area.setBackground(new Color(22, 28, 38));
-        area.setFont(new Font("JetBrains Mono", Font.PLAIN, 13));
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
-        area.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        return area;
+    private void handleButtonAction(String action) {
+        switch (action) {
+            case "scan":
+                executeScan();
+                break;
+            case "export":
+                exportResults();
+                break;
+            case "settings":
+                tabbedPane.setSelectedIndex(4); // Switch to settings tab
+                break;
+            case "help":
+                showHelp();
+                break;
+            // Add other action handlers as needed
+        }
     }
 
-    private void setupPulseAnimation() {
-        pulseTimer = new Timer(50, e -> {
-            if (pulsing) {
-                pulseAlpha = (float) (0.2f * Math.sin(System.currentTimeMillis() / 500.0) + 0.2f);
-                scanButton.repaint();
+    private void executeScan() {
+        executorService.submit(() -> {
+            appendToOutput("Starting system scan...");
+            // Simulate scanning process
+            try {
+                Process process = Runtime.getRuntime().exec("ps aux");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    final String processLine = line;
+                    SwingUtilities.invokeLater(() -> appendToOutput(processLine));
+                }
+                updateLastScanTime();
+            } catch (Exception e) {
+                appendToOutput("Error during scan: " + e.getMessage());
             }
         });
-        pulseTimer.start();
     }
 
-    private void startPulsing() {
-        pulsing = true;
+    private void exportResults() {
+        appendToOutput("Exporting results...");
+        // Add export functionality
     }
 
-    private void stopPulsing() {
-        pulsing = false;
-        pulseAlpha = 0.0f;
-        scanButton.repaint();
+    private void showHelp() {
+        JOptionPane.showMessageDialog(this,
+                "System Monitor Help\n\n" +
+                        "This application monitors system processes, network activity, and filesystem changes.\n" +
+                        "Use the tabs to navigate between different monitoring functions.\n" +
+                        "Click 'Run System Scan' to perform a complete system analysis.",
+                "Help",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private class ScanButtonListener implements ActionListener {
-        private final AtomicInteger scanProgress = new AtomicInteger(0);
+    private void appendToOutput(String message) {
+        SwingUtilities.invokeLater(() -> {
+            outputArea.append(String.format("[%s] %s%n",
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
+                    message));
+            outputArea.setCaretPosition(outputArea.getDocument().getLength());
+        });
+    }
 
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            scanButton.setEnabled(false);
-            progressBar.setVisible(true);
-            progressBar.setIndeterminate(true);
-            statusLabel.setText("⚡ Scanning System...");
-            statusLabel.setForeground(GRADIENT_END);
-
-            new Thread(() -> {
-                try {
-                    ProcessBuilder pb = new ProcessBuilder("python", "PythonScripts/check/sc.py");
-                    pb.redirectErrorStream(true);
-
-                    Process process = pb.start();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    String line;
-
-                    outputArea.setText("");
-                    while ((line = reader.readLine()) != null) {
-                        String finalLine = line;
-                        SwingUtilities.invokeLater(() -> {
-                            outputArea.append("→ " + finalLine + "\n");
-                            outputArea.setCaretPosition(outputArea.getDocument().getLength());
-                        });
-                    }
-
-                    int exitCode = process.waitFor();
-                    SwingUtilities.invokeLater(() -> {
-                        if (exitCode == 0) {
-                            outputArea.append("\n✅ Security scan completed successfully.\n");
-                            statusLabel.setText("✅ Scan Complete");
-                            statusLabel.setForeground(new Color(72, 187, 120));
-                        } else {
-                            outputArea.append("\n❌ Security scan encountered an error.\n");
-                            statusLabel.setText("❌ Scan Failed");
-                            statusLabel.setForeground(new Color(245, 101, 101));
-                        }
-                    });
-                } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> {
-                        outputArea.append("\n❌ Error: " + ex.getMessage() + "\n");
-                        statusLabel.setText("❌ Error Occurred");
-                        statusLabel.setForeground(new Color(245, 101, 101));
-                    });
-                } finally {
-                    SwingUtilities.invokeLater(() -> {
-                        scanButton.setEnabled(true);
-                        progressBar.setIndeterminate(false);
-                        progressBar.setVisible(false);
-                    });
-                }
-            }).start();
-        }
-
-        public AtomicInteger getScanProgress() {
-            return scanProgress;
+    private void updateLastScanTime() {
+        if (lastScanLabel != null) {
+            LocalDateTime now = LocalDateTime.now();
+            lastScanLabel.setText(now.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
         }
     }
 
-    // Custom components
-    private static class JGradientPanel extends JPanel {
-        private final Color gradientStart;
-        private final Color gradientEnd;
-
-        public JGradientPanel(Color start, Color end) {
-            this.gradientStart = start;
-            this.gradientEnd = end;
-            setOpaque(false);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            GradientPaint gradient = new GradientPaint(
-                    0, 0, gradientStart,
-                    getWidth(), 0, gradientEnd
-            );
-            g2.setPaint(gradient);
-            g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 10, 10));
-            g2.dispose();
-        }
-    }
-
-    private static class RoundedPanel extends JPanel {
-        private final int radius;
-        private final Color backgroundColor;
-
-        public RoundedPanel(int radius, Color bgColor) {
-            this.radius = radius;
-            this.backgroundColor = bgColor;
-            setOpaque(false);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(backgroundColor);
-            g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), radius, radius));
-            g2.dispose();
-        }
-    }
-
-    private static class RoundedBorder extends AbstractBorder {
-        private final int radius;
-        private final Color color;
-
-        public RoundedBorder(int radius, Color color) {
-            this.radius = radius;
-            this.color = color;
-        }
-
-        @Override
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(color);
-            g2.setStroke(new BasicStroke(2));
-            g2.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
-            g2.dispose();
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c) {
-            return new Insets(radius + 1, radius + 1, radius + 1, radius + 1);
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c, Insets insets) {
-            insets.left = insets.right = insets.top = insets.bottom = radius + 1;
-            return insets;
-        }
-    }
+//    public static void main(String[] args) {
+//        try {
+//            UIManager.setLookAndFeel(new FlatDarkLaf());
+//        } catch (Exception e) {
+//            System.err.println("Failed to initialize dark theme");
+//        }
+//
+//        SwingUtilities.invokeLater(() -> {
+//            JFrame frame = new JFrame("System Monitor");
+//            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//            frame.setContentPane(new Malware());
+//            frame.setSize(1000, 700);
+//            frame.setLocationRelativeTo(null);
+//            frame.setVisible(true);
+//        });
+//    }
 }
