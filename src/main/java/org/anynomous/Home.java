@@ -10,6 +10,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.nio.charset.StandardCharsets;
+import java.io.File;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Home extends JPanel {
     // Modern dark theme colors
@@ -27,7 +33,10 @@ public class Home extends JPanel {
     private  JTabbedPane tabbedPane;
     private  JTextArea outputArea;
     private  Timer updateTimer;
+    private static final Logger logger = LoggerFactory.getLogger(Home.class);
 
+    private static final String[] WINDOWS_COMMAND = {"tasklist", "/FO", "CSV"};
+    private static final String[] UNIX_COMMAND = {"/bin/ps", "aux"};
 
     public Home() {
         executorService = Executors.newFixedThreadPool(4);
@@ -318,8 +327,6 @@ public class Home extends JPanel {
         optionsPanel.add(networkInterval);
         optionsPanel.add(filesystemInterval);
         optionsPanel.add(notifyOnWarning);
-//        optionsPanel.add(not
-
         optionsPanel.add(notifyOnError);
 
         return optionsPanel;
@@ -442,20 +449,73 @@ public class Home extends JPanel {
     private void executeScan() {
         executorService.submit(() -> {
             appendToOutput("Starting system scan...");
-            // Simulate scanning process
             try {
-                Process process = Runtime.getRuntime().exec("ps aux");
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    final String processLine = line;
-                    SwingUtilities.invokeLater(() -> appendToOutput(processLine));
+                String[] command = System.getProperty("os.name").toLowerCase().contains("windows") 
+                    ? WINDOWS_COMMAND 
+                    : UNIX_COMMAND;
+                
+                ProcessBuilder pb = new ProcessBuilder(command);
+                
+                // Basic security checks
+                String userHome = System.getProperty("user.home");
+                if (userHome == null || !new File(userHome).isDirectory()) {
+                    throw new SecurityException("Invalid working directory");
                 }
-                updateLastScanTime();
+                pb.directory(new File(userHome));
+                
+                // Clear sensitive env vars
+                pb.environment().clear();
+                pb.redirectErrorStream(true);
+                
+                Process process = pb.start();
+                
+                if (!process.waitFor(30, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                    appendToOutput("Process timed out");
+                    return;
+                }
+                
+                // Read output with strict bounds
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    int lineCount = 0;
+                    final int MAX_LINES = 1000; // Prevent DoS
+                    
+                    while ((line = reader.readLine()) != null && lineCount < MAX_LINES) {
+                        final String sanitizedLine = sanitizeOutput(line);
+                        if (!sanitizedLine.isEmpty()) {
+                            SwingUtilities.invokeLater(() -> appendToOutput(sanitizedLine));
+                        }
+                        lineCount++;
+                    }
+                    
+                    if (lineCount >= MAX_LINES) {
+                        appendToOutput("Output truncated due to length");
+                    }
+                }
+                
+                int exitCode = process.exitValue();
+                if (exitCode != 0) {
+                    logger.warn("Process completed with non-zero exit code: {}", exitCode);
+                    appendToOutput("Process completed with warnings");
+                }
+                
             } catch (Exception e) {
-                appendToOutput("Error during scan: " + e.getMessage());
+                logger.error("Scan error", e);
+                appendToOutput("An error occurred during the scan");
             }
         });
+    }
+
+    private String sanitizeOutput(String input) {
+        if (input == null || input.isEmpty()) {
+            return "";
+        }
+        
+        // Strict whitelist of allowed characters
+        return input.replaceAll("[^a-zA-Z0-9\\s\\-_.,:]", "")
+                   .trim();
     }
 
     private void exportResults() {
