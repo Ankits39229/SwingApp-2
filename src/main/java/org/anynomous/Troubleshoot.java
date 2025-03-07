@@ -30,30 +30,30 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 
 
 public class Troubleshoot {
-    private static final Color BACKGROUND_COLOR = new Color(18, 18, 18);
-    private static final Color PANEL_BACKGROUND = new Color(30, 30, 30);
+    private static final Color BACKGROUND_COLOR = new Color(0, 0, 0);
+    private static final Color PANEL_BACKGROUND = new Color(10, 10, 10);
     private static final Color TEXT_COLOR = new Color(255, 255, 255);
     private static final Color SECONDARY_TEXT_COLOR = new Color(170, 170, 170);
-    private static final Color HOVER_COLOR = new Color(45, 45, 45);
-    private static final Color GRADIENT_START = new Color(25, 25, 25);
-    private static final Color GRADIENT_END = new Color(35, 35, 35);
-    private static final Color ACCENT_COLOR = new Color(56, 132, 255);
-    private static final Color ACCENT_HOVER_COLOR = new Color(80, 160, 255);
-    private static final Color CARD_SHADOW_COLOR = new Color(10, 10, 10, 100);
-    private static final Color SIDEBAR_GRADIENT_START = new Color(28, 28, 32);
-    private static final Color SIDEBAR_GRADIENT_END = new Color(35, 35, 40);
-    private static final Color SIDEBAR_ACCENT = new Color(70, 130, 230);
-    private static final Color SIDEBAR_HIGHLIGHT = new Color(255, 255, 255, 30);
+    private static final Color HOVER_COLOR = new Color(20, 20, 20);
+    private static final Color GRADIENT_START = new Color(8, 8, 8);
+    private static final Color GRADIENT_END = new Color(12, 12, 12);
+    private static final Color ACCENT_COLOR = new Color(45, 45, 45);
+    private static final Color ACCENT_HOVER_COLOR = new Color(55, 55, 55);
+    private static final Color CARD_SHADOW_COLOR = new Color(0, 0, 0, 100);
+    private static final Color SIDEBAR_GRADIENT_START = new Color(5, 5, 5);
+    private static final Color SIDEBAR_GRADIENT_END = new Color(10, 10, 10);
+    private static final Color SIDEBAR_ACCENT = new Color(50, 50, 50);
+    private static final Color SIDEBAR_HIGHLIGHT = new Color(255, 255, 255, 15);
     private static final Color[] CATEGORY_COLORS = {
-        new Color(56, 132, 255),    // System Performance - Blue
-        new Color(92, 184, 92),     // Network Diagnostics - Green
-        new Color(240, 173, 78),    // Driver Issues - Orange
-        new Color(217, 83, 79),     // File System Repair - Red
-        new Color(156, 39, 176),    // Blue Screen Errors - Purple
-        new Color(0, 188, 212),     // App Compatibility - Cyan
-        new Color(255, 64, 129),    // Audio Troubleshooting - Pink
-        new Color(63, 81, 181),     // Bluetooth & Devices - Indigo
-        new Color(255, 152, 0)      // Browser Issues - Amber
+        new Color(70, 130, 180, 150),  // System Performance - Steel Blue
+        new Color(65, 105, 225, 150),  // Network Diagnostics - Royal Blue
+        new Color(46, 139, 87, 150),   // Driver Issues - Sea Green
+        new Color(210, 105, 30, 150),  // File System Repair - Chocolate
+        new Color(106, 90, 205, 150),  // Blue Screen Errors - Slate Blue
+        new Color(220, 20, 60, 150),   // App Compatibility - Crimson
+        new Color(72, 61, 139, 150),   // Audio Troubleshooting - Dark Slate Blue
+        new Color(0, 139, 139, 150),   // Bluetooth & Devices - Dark Cyan
+        new Color(184, 134, 11, 150)   // Browser Issues - Dark Goldenrod
     };
 //    private static final Color BUTTON_COLOR = new Color(238, 10, 10);
 
@@ -101,19 +101,19 @@ public class Troubleshoot {
         headerPanel.setBackground(BACKGROUND_COLOR);
         JLabel titleLabel = new JLabel("Troubleshoot");
         titleLabel.setForeground(TEXT_COLOR);
-        titleLabel.setFont(new Font("Segue UI", Font.BOLD, 24));
-        JLabel subtitleLabel = new JLabel("<html></html>");
+        titleLabel.setFont(new Font("Segue UI", Font.BOLD, 22));
+        JLabel subtitleLabel = new JLabel("<html>Select a category to diagnose and fix issues</html>");
         subtitleLabel.setForeground(SECONDARY_TEXT_COLOR);
-        subtitleLabel.setFont(new Font("Segue UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font("Segue UI", Font.PLAIN, 13));
         headerPanel.add(titleLabel);
-        headerPanel.add(Box.createVerticalStrut(10));
+        headerPanel.add(Box.createVerticalStrut(8));
         headerPanel.add(subtitleLabel);
         return headerPanel;
     }
 
     private JPanel createMainGridPanel() {
         // Use a more responsive layout with better spacing
-        JPanel mainPanel = new JPanel(new GridLayout(3, 3, 18, 18));
+        JPanel mainPanel = new JPanel(new GridLayout(3, 3, 15, 15));
         mainPanel.setBackground(BACKGROUND_COLOR);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
         
@@ -134,15 +134,14 @@ public class Troubleshoot {
     public JPanel createItemPanel(String title, String description, int index) {
         // Get the category color for this panel
         final Color categoryColor = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
-        final Color categoryColorDarker = darkenColor(categoryColor, 0.8f);
-        final Color categoryColorLighter = lightenColor(categoryColor, 0.2f);
         
         JPanel panel = new JPanel() {
-            private float alpha = 0.0f;
+            private float hoverAlpha = 0.0f;
             private Timer fadeTimer;
             private boolean isHovered = false;
             private boolean isPressed = false;
-            private final int shadowSize = 8;
+            private float pulseEffect = 0.0f;
+            private Timer pulseTimer;
             
             {
                 setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -155,6 +154,7 @@ public class Troubleshoot {
                     public void mouseEntered(MouseEvent e) {
                         isHovered = true;
                         startFadeAnimation(true);
+                        startPulseAnimation(true);
                         setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
                     
@@ -163,6 +163,7 @@ public class Troubleshoot {
                         isHovered = false;
                         isPressed = false;
                         startFadeAnimation(false);
+                        startPulseAnimation(false);
                         setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
                     }
                     
@@ -190,17 +191,33 @@ public class Troubleshoot {
                 
                 fadeTimer = new Timer(10, e -> {
                     if (fadeIn) {
-                        alpha = Math.min(1.0f, alpha + 0.08f);
-            } else {
-                        alpha = Math.max(0.0f, alpha - 0.08f);
+                        hoverAlpha = Math.min(1.0f, hoverAlpha + 0.08f);
+                    } else {
+                        hoverAlpha = Math.max(0.0f, hoverAlpha - 0.08f);
                     }
                     
-                    if ((fadeIn && alpha >= 1.0f) || (!fadeIn && alpha <= 0.0f)) {
+                    if ((fadeIn && hoverAlpha >= 1.0f) || (!fadeIn && hoverAlpha <= 0.0f)) {
                         fadeTimer.stop();
                     }
                     repaint();
                 });
                 fadeTimer.start();
+            }
+            
+            private void startPulseAnimation(boolean start) {
+                if (pulseTimer != null && pulseTimer.isRunning()) {
+                    pulseTimer.stop();
+                }
+                
+                if (start) {
+                    pulseTimer = new Timer(30, e -> {
+                        pulseEffect += 0.1f;
+                        repaint();
+                    });
+                    pulseTimer.start();
+                } else {
+                    pulseEffect = 0.0f;
+                }
             }
             
             @Override
@@ -212,94 +229,57 @@ public class Troubleshoot {
                 int width = getWidth();
                 int height = getHeight();
                 
-                // Draw shadow (when not pressed)
-                if (!isPressed) {
-                    for (int i = 0; i < shadowSize; i++) {
-                        float shadowAlpha = 0.2f * (1 - (float)i / shadowSize);
-                        if (isHovered) {
-                            shadowAlpha *= 1.5f;
-                        }
-                        g2d.setColor(new Color(0, 0, 0, (int)(shadowAlpha * 255)));
-                        g2d.fill(new RoundRectangle2D.Float(
-                            shadowSize - i, shadowSize - i, 
-                            width - (shadowSize - i) * 2, 
-                            height - (shadowSize - i) * 2, 
-                            12, 12
-                        ));
-                    }
-                }
+                // Draw black background
+                g2d.setColor(PANEL_BACKGROUND);
+                g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, 8, 8));
                 
-                // Create gradient background with category color influence
-                Point2D start = new Point2D.Float(0, 0);
-                Point2D end = new Point2D.Float(0, height);
-                
-                // Base gradient colors
-                Color gradStart = GRADIENT_START;
-                Color gradEnd = GRADIENT_END;
-                
-                // Add category color influence
-                if (isHovered || isPressed) {
-                    // More color when hovered/pressed
-                    gradStart = blendColors(gradStart, categoryColor, isPressed ? 0.15f : 0.1f);
-                    gradEnd = blendColors(gradEnd, categoryColor, isPressed ? 0.2f : 0.15f);
-                } else {
-                    // Subtle color influence when not hovered
-                    gradStart = blendColors(gradStart, categoryColor, 0.05f);
-                    gradEnd = blendColors(gradEnd, categoryColor, 0.08f);
-                }
-                
-                // Apply press effect
-                if (isPressed) {
-                    gradStart = darkenColor(gradStart, 0.9f);
-                    gradEnd = darkenColor(gradEnd, 0.9f);
-                    g2d.translate(1, 1);
-                }
-                
-                LinearGradientPaint gradientPaint = new LinearGradientPaint(
-                    start, end,
-                    new float[]{0.0f, 1.0f},
-                    new Color[]{gradStart, gradEnd}
-                );
-                
-                // Draw panel background
-                g2d.setPaint(gradientPaint);
-                g2d.fill(new RoundRectangle2D.Float(0, 0, width - (isPressed ? 2 : 0), height - (isPressed ? 2 : 0), 12, 12));
-                
-                // Draw category color accent on top
-                g2d.setColor(categoryColor);
-                g2d.fillRect(0, 0, width, 3);
-                
-                // Draw hover/active effects
-                if (alpha > 0.0f) {
-                    // Accent border with category color
-                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha * 0.8f));
-                    g2d.setColor(categoryColor);
-                    g2d.setStroke(new BasicStroke(2f));
-                    g2d.draw(new RoundRectangle2D.Float(1, 1, width - 3, height - 3, 12, 12));
+                // Draw hover effect with subtle color
+                if (isHovered || hoverAlpha > 0) {
+                    // Base hover effect
+                    g2d.setColor(isPressed ? HOVER_COLOR : new Color(15, 15, 15));
+                    g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, 8, 8));
                     
-                    // Subtle inner glow with category color
-                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha * 0.15f));
-                    g2d.setColor(categoryColorLighter);
-                    g2d.fill(new RoundRectangle2D.Float(2, 2, width - 4, height - 4, 10, 10));
-                    
-                    // Top highlight
-                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha * 0.4f));
-                    Point2D highlightStart = new Point2D.Float(width/2, 0);
-                    Point2D highlightEnd = new Point2D.Float(width/2, height/3);
-                    LinearGradientPaint highlightPaint = new LinearGradientPaint(
-                        highlightStart, highlightEnd,
-                        new float[]{0.0f, 1.0f},
-                        new Color[]{new Color(255, 255, 255, 60), new Color(255, 255, 255, 0)}
+                    // Subtle color accent on hover
+                    Color hoverAccent = new Color(
+                        categoryColor.getRed(),
+                        categoryColor.getGreen(),
+                        categoryColor.getBlue(),
+                        (int)(40 * hoverAlpha)
                     );
-                    g2d.setPaint(highlightPaint);
-                    g2d.fill(new RoundRectangle2D.Float(2, 2, width - 4, height/3, 10, 10));
+                    g2d.setColor(hoverAccent);
+                    g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, 8, 8));
+                    
+                    // Animated border on hover
+                    float borderAlpha = hoverAlpha * (0.6f + 0.4f * (float)Math.sin(pulseEffect));
+                    g2d.setColor(new Color(
+                        categoryColor.getRed(),
+                        categoryColor.getGreen(),
+                        categoryColor.getBlue(),
+                        (int)(100 * borderAlpha)
+                    ));
+                    g2d.setStroke(new BasicStroke(1.5f));
+                    g2d.draw(new RoundRectangle2D.Float(0, 0, width-1, height-1, 8, 8));
+                    
+                    // Top accent line
+                    g2d.setColor(new Color(
+                        categoryColor.getRed(),
+                        categoryColor.getGreen(),
+                        categoryColor.getBlue(),
+                        (int)(150 * hoverAlpha)
+                    ));
+                    g2d.fillRect(0, 0, width, 2);
+                }
+                
+                // Press effect
+                if (isPressed) {
+                    g2d.translate(1, 1);
                 }
                 
                 g2d.dispose();
             }
         };
 
-        // Create icon panel with category color background
+        // Create icon panel with improved styling
         JPanel iconPanel = new JPanel() {
             private float pulseScale = 1.0f;
             private Timer pulseTimer;
@@ -307,6 +287,7 @@ public class Troubleshoot {
             
             {
                 setOpaque(false);
+                // Increase the panel size to accommodate larger icons
                 setPreferredSize(new Dimension(60, 60));
                 
                 // Add subtle pulse animation on hover
@@ -356,41 +337,44 @@ public class Troubleshoot {
                 int centerX = getWidth() / 2;
                 int centerY = getHeight() / 2;
                 
-                // Draw circle background with category color
-                int circleSize = 48;
-                int adjustedSize = pulsing ? (int)(circleSize * pulseScale) : circleSize;
+                // Increase circle size
+                int circleSize = pulsing ? (int)(48 * pulseScale) : 48;
+                g2d.setColor(new Color(15, 15, 15));
+                g2d.fillOval(centerX - circleSize/2, centerY - circleSize/2, circleSize, circleSize);
                 
-                // Draw gradient circle background
-                RadialGradientPaint circlePaint = new RadialGradientPaint(
-                    centerX, centerY, adjustedSize/2,
-                    new float[]{0.0f, 0.7f, 1.0f},
-                    new Color[]{
-                        categoryColor,
-                        categoryColorDarker,
-                        new Color(categoryColorDarker.getRed(), categoryColorDarker.getGreen(), categoryColorDarker.getBlue(), 100)
-                    }
-                );
-                g2d.setPaint(circlePaint);
-                g2d.fillOval(centerX - adjustedSize/2, centerY - adjustedSize/2, adjustedSize, adjustedSize);
+                // Draw subtle glow
+                if (pulsing) {
+                    int glowSize = circleSize + 12;
+                    RadialGradientPaint glow = new RadialGradientPaint(
+                        centerX, centerY, glowSize/2,
+                        new float[] {0.0f, 1.0f},
+                        new Color[] {
+                            new Color(categoryColor.getRed(), categoryColor.getGreen(), categoryColor.getBlue(), 40),
+                            new Color(categoryColor.getRed(), categoryColor.getGreen(), categoryColor.getBlue(), 0)
+                        }
+                    );
+                    g2d.setPaint(glow);
+                    g2d.fillOval(centerX - glowSize/2, centerY - glowSize/2, glowSize, glowSize);
+                }
                 
-                // Draw the emoji with slight scaling if pulsing
+                // Draw the emoji with increased size
                 String emoji = getEmojiForIndex(index);
-                float fontSize = pulsing ? 32 * pulseScale : 32;
-                g2d.setFont(new Font("Segoe UI Emoji", Font.PLAIN, (int)fontSize));
+                // Increase font size from 20 to 24
+                g2d.setFont(new Font("Segoe UI Emoji", Font.PLAIN, pulsing ? (int)(24 * pulseScale) : 24));
                 FontMetrics fm = g2d.getFontMetrics();
                 int emojiWidth = fm.stringWidth(emoji);
                 int emojiHeight = fm.getHeight();
-                g2d.setColor(Color.WHITE);
+                g2d.setColor(categoryColor);
                 g2d.drawString(emoji, centerX - emojiWidth/2, centerY + emojiHeight/4);
                 
                 g2d.dispose();
             }
         };
 
-        // Create title label with category color
+        // Create title label with subtle color
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setForeground(categoryColor);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        titleLabel.setForeground(TEXT_COLOR);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // Create description label
@@ -505,15 +489,16 @@ public class Troubleshoot {
     }
 
     public static class SystemPerformancePanel extends BaseSidebarPanel {
-        // Modern color scheme
-        private static final Color PANEL_BACKGROUND = new Color(30, 30, 30);
-        private static final Color BUTTON_COLOR = new Color(56, 132, 255);
-        private static final Color BUTTON_HOVER_COLOR = new Color(25, 113, 255);
-        private static final Color SECONDARY_TEXT_COLOR = new Color(107, 119, 140);
-        private static final Color OUTPUT_BACKGROUND = new Color(30, 30, 30);
-        private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 14);
-        private static final Font STATUS_FONT = new Font("Segoe UI", Font.PLAIN, 13);
-        private static final int CORNER_RADIUS = 8;
+        // Minimal black color scheme with subtle accent
+        private static final Color PANEL_BACKGROUND = new Color(10, 10, 10);
+        private static final Color BUTTON_COLOR = new Color(25, 25, 25);
+        private static final Color BUTTON_HOVER_COLOR = new Color(35, 35, 35);
+        private static final Color BUTTON_ACCENT = new Color(70, 130, 180, 150); // Steel Blue
+        private static final Color SECONDARY_TEXT_COLOR = new Color(150, 150, 150);
+        private static final Color OUTPUT_BACKGROUND = new Color(5, 5, 5);
+        private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 13);
+        private static final Font STATUS_FONT = new Font("Segoe UI", Font.PLAIN, 12);
+        private static final int CORNER_RADIUS = 4;
 
         public SystemPerformancePanel() {
             super("System Performance");
@@ -595,10 +580,12 @@ public class Troubleshoot {
             scanPanel.setBackground(PANEL_BACKGROUND);
             scanPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-            // Create the scan button with enhanced styling
+            // Create the scan button with improved styling
             JButton scanButton = new JButton("Quick Scan") {
                 private boolean isHovered = false;
                 private boolean isPressed = false;
+                private float pulseEffect = 0.0f;
+                private Timer pulseTimer;
                 
                 {
                     setContentAreaFilled(false);
@@ -607,12 +594,13 @@ public class Troubleshoot {
                     setFont(BUTTON_FONT);
                     setForeground(Color.WHITE);
                     setCursor(new Cursor(Cursor.HAND_CURSOR));
-                    setPreferredSize(new Dimension(0, 45)); // Taller button
+                    setPreferredSize(new Dimension(0, 40));
                     
                     addMouseListener(new MouseAdapter() {
                         @Override
                         public void mouseEntered(MouseEvent e) {
                             isHovered = true;
+                            startPulseAnimation(true);
                             repaint();
                         }
                         
@@ -620,6 +608,7 @@ public class Troubleshoot {
                         public void mouseExited(MouseEvent e) {
                             isHovered = false;
                             isPressed = false;
+                            startPulseAnimation(false);
                             repaint();
                         }
                         
@@ -637,6 +626,22 @@ public class Troubleshoot {
                     });
                 }
                 
+                private void startPulseAnimation(boolean start) {
+                    if (pulseTimer != null && pulseTimer.isRunning()) {
+                        pulseTimer.stop();
+                    }
+                    
+                    if (start) {
+                        pulseTimer = new Timer(30, e -> {
+                            pulseEffect += 0.1f;
+                            repaint();
+                        });
+                        pulseTimer.start();
+                    } else {
+                        pulseEffect = 0.0f;
+                    }
+                }
+                
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2d = (Graphics2D) g.create();
                     g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -645,46 +650,40 @@ public class Troubleshoot {
                     int width = getWidth();
                     int height = getHeight();
                     
-                    // Create gradient based on state
-                    Color startColor = BUTTON_COLOR;
-                    Color endColor = BUTTON_HOVER_COLOR;
-                    
-                    if (isPressed) {
-                        startColor = BUTTON_HOVER_COLOR;
-                        endColor = BUTTON_COLOR;
-                    } else if (isHovered) {
-                        startColor = new Color(
-                            Math.min(255, startColor.getRed() + 20),
-                            Math.min(255, startColor.getGreen() + 20),
-                            Math.min(255, startColor.getBlue() + 20)
-                        );
-                    }
-                    
-                    // Apply transform for press effect
-                    if (isPressed) {
-                        g2d.translate(0, 1);
-                    }
-                    
                     // Draw button background
-                    Point2D start = new Point2D.Float(0, 0);
-                    Point2D end = new Point2D.Float(0, height);
-                    LinearGradientPaint gradientPaint = new LinearGradientPaint(
-                        start, end,
-                        new float[]{0.0f, 1.0f},
-                        new Color[]{startColor, endColor}
-                    );
-                    
-                    g2d.setPaint(gradientPaint);
+                    g2d.setColor(isPressed ? BUTTON_HOVER_COLOR : (isHovered ? BUTTON_HOVER_COLOR : BUTTON_COLOR));
                     g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
                     
-                    // Add highlight on top edge
-                    if (!isPressed) {
-                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f));
-                        g2d.setColor(Color.WHITE);
-                        g2d.fillRect(CORNER_RADIUS/2, 1, width - CORNER_RADIUS, 2);
+                    // Draw subtle accent on hover
+                    if (isHovered) {
+                        // Subtle color accent
+                        Color accentColor = new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            isPressed ? 60 : 40
+                        );
+                        g2d.setColor(accentColor);
+                        g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                        
+                        // Animated border
+                        float borderAlpha = 0.6f + 0.4f * (float)Math.sin(pulseEffect);
+                        g2d.setColor(new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            (int)(100 * borderAlpha)
+                        ));
+                        g2d.setStroke(new BasicStroke(1.5f));
+                        g2d.draw(new RoundRectangle2D.Float(0, 0, width-1, height-1, CORNER_RADIUS, CORNER_RADIUS));
                     }
                     
-                    // Draw text with shadow
+                    // Apply press effect
+                    if (isPressed) {
+                        g2d.translate(1, 1);
+                    }
+                    
+                    // Draw text
                     g2d.setFont(getFont());
                     FontMetrics fm = g2d.getFontMetrics();
                     String text = getText();
@@ -705,7 +704,7 @@ public class Troubleshoot {
                 }
             };
 
-            // Create output area with improved styling
+            // Create output area with minimal styling
             JTextArea outputArea = new JTextArea();
             outputArea.setEditable(false);
             outputArea.setLineWrap(true);
@@ -714,21 +713,21 @@ public class Troubleshoot {
             outputArea.setForeground(TEXT_COLOR);
             outputArea.setBackground(OUTPUT_BACKGROUND);
             outputArea.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(50, 50, 50), 1),
+                BorderFactory.createLineBorder(new Color(20, 20, 20), 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
             ));
             
-            // Create scrollable output panel
+            // Create scrollable output panel with improved styling
             JScrollPane scrollPane = new JScrollPane(outputArea);
             scrollPane.setBorder(BorderFactory.createEmptyBorder());
             scrollPane.setPreferredSize(new Dimension(0, 200));
             
-            // Apply custom scrollbar UI
+            // Apply custom scrollbar UI with subtle accent
             scrollPane.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
                 @Override
                 protected void configureScrollBarColors() {
-                    this.thumbColor = new Color(80, 80, 80);
-                    this.trackColor = new Color(45, 45, 45);
+                    this.thumbColor = new Color(BUTTON_ACCENT.getRed(), BUTTON_ACCENT.getGreen(), BUTTON_ACCENT.getBlue(), 80);
+                    this.trackColor = new Color(15, 15, 15);
                 }
                 
                 @Override
@@ -748,141 +747,16 @@ public class Troubleshoot {
                     button.setMaximumSize(new Dimension(0, 0));
                     return button;
                 }
-            });
-
-            // Add action to scan button
-            scanButton.addActionListener(new ActionListener() {
+                
                 @Override
-                public void actionPerformed(ActionEvent e) {
-                    outputArea.setText("Starting system performance scan...\n");
-                    scanButton.setEnabled(false);
-                    
-                    // Create animated progress indicator
-                    JPanel progressPanel = new JPanel(new BorderLayout());
-                    progressPanel.setOpaque(false);
-                    
-                    JProgressBar progressBar = new JProgressBar(0, 100);
-                    progressBar.setIndeterminate(true);
-                    progressBar.setStringPainted(true);
-                    progressBar.setString("Scanning...");
-                    progressBar.setForeground(BUTTON_COLOR);
-                    progressBar.setBackground(new Color(45, 45, 45));
-                    progressBar.setBorder(BorderFactory.createEmptyBorder());
-                    
-                    progressPanel.add(progressBar, BorderLayout.CENTER);
-                    scanPanel.add(progressPanel, BorderLayout.SOUTH);
-                    scanPanel.revalidate();
-                    
-                    // Simulate scan with SwingWorker
-                    new SwingWorker<Void, String>() {
-                        @Override
-                        protected Void doInBackground() throws Exception {
-                            // Simulate scanning steps
-                            publish("Checking CPU usage...");
-                            Thread.sleep(800);
-                            publish("CPU usage: 23%");
-                            Thread.sleep(500);
-                            
-                            publish("Checking memory usage...");
-                            Thread.sleep(800);
-                            publish("Memory usage: 4.2GB / 16GB (26%)");
-                            Thread.sleep(500);
-                            
-                            publish("Checking disk performance...");
-                            Thread.sleep(1000);
-                            publish("Disk read speed: 520MB/s");
-                            publish("Disk write speed: 480MB/s");
-                            Thread.sleep(500);
-                            
-                            publish("Checking for high resource processes...");
-                            Thread.sleep(1200);
-                            publish("Found 2 processes with high resource usage:");
-                            publish("- chrome.exe (CPU: 15%, Memory: 1.2GB)");
-                            publish("- explorer.exe (CPU: 5%, Memory: 300MB)");
-                            Thread.sleep(500);
-                            
-                            publish("Checking startup impact...");
-                            Thread.sleep(1000);
-                            publish("3 high-impact startup items found");
-                            Thread.sleep(500);
-                            
-                            publish("Checking system temperature...");
-                            Thread.sleep(800);
-                            publish("CPU temperature: 65°C (Normal)");
-                            Thread.sleep(500);
-                            
-                            publish("Scan complete!");
-                            return null;
-                        }
-                        
-                        @Override
-                        protected void process(java.util.List<String> chunks) {
-                            for (String chunk : chunks) {
-                                outputArea.append(chunk + "\n");
-                                outputArea.setCaretPosition(outputArea.getDocument().getLength());
-                            }
-                        }
-                        
-                        @Override
-                        protected void done() {
-                                scanButton.setEnabled(true);
-                            progressBar.setIndeterminate(false);
-                            progressBar.setValue(100);
-                            progressBar.setString("Complete");
-                            
-                            // Add summary panel with recommendations
-                            JPanel summaryPanel = new JPanel();
-                            summaryPanel.setLayout(new BoxLayout(summaryPanel, BoxLayout.Y_AXIS));
-                            summaryPanel.setBackground(new Color(40, 40, 45));
-                            summaryPanel.setBorder(BorderFactory.createCompoundBorder(
-                                BorderFactory.createLineBorder(BUTTON_COLOR, 1),
-                                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-                            ));
-                            
-                            JLabel summaryLabel = new JLabel("System Performance Summary");
-                            summaryLabel.setForeground(Color.WHITE);
-                            summaryLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-                            summaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                            
-                            JLabel recommendationsLabel = new JLabel("<html>Recommendations:<br>" +
-                                "• Consider closing Chrome to free up memory<br>" +
-                                "• Optimize startup items to improve boot time<br>" +
-                                "• System performance is generally good</html>");
-                            recommendationsLabel.setForeground(SECONDARY_TEXT_COLOR);
-                            recommendationsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                            recommendationsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                            
-                            summaryPanel.add(summaryLabel);
-                            summaryPanel.add(Box.createVerticalStrut(10));
-                            summaryPanel.add(recommendationsLabel);
-                            
-                            // Animate the summary panel appearance
-                            summaryPanel.setVisible(false);
-                            scanPanel.add(summaryPanel, BorderLayout.NORTH);
-                            
-                            Timer summaryTimer = new Timer(500, evt -> {
-                                summaryPanel.setVisible(true);
-                                scanPanel.revalidate();
-                                
-                                // Slide-in animation
-                                int targetHeight = summaryPanel.getPreferredSize().height;
-                                summaryPanel.setSize(summaryPanel.getWidth(), 0);
-                                
-                                Timer slideTimer = new Timer(20, e -> {
-                                    int currentHeight = summaryPanel.getHeight();
-                                    int newHeight = Math.min(targetHeight, currentHeight + 5);
-                                    summaryPanel.setSize(summaryPanel.getWidth(), newHeight);
-                                    
-                                    if (newHeight >= targetHeight) {
-                                        ((Timer)e.getSource()).stop();
-                                    }
-                                });
-                                slideTimer.start();
-                            });
-                            summaryTimer.setRepeats(false);
-                            summaryTimer.start();
-                        }
-                    }.execute();
+                protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+                    if (thumbBounds.isEmpty()) return;
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(thumbColor);
+                    g2.fill(new RoundRectangle2D.Float(thumbBounds.x, thumbBounds.y,
+                            thumbBounds.width, thumbBounds.height, 6, 6));
+                    g2.dispose();
                 }
             });
 
@@ -1614,10 +1488,11 @@ public class Troubleshoot {
 
 
     abstract static class BaseSidebarPanel extends JPanel {
-        protected static final Color PANEL_BACKGROUND = new Color(30, 30, 30);
+        protected static final Color PANEL_BACKGROUND = new Color(10, 10, 10);
         protected static final Color TEXT_COLOR = new Color(255, 255, 255);
         protected static final Color SECONDARY_TEXT_COLOR = new Color(170, 170, 170);
-        protected static final Color BUTTON_COLOR = new Color(238, 10, 10);
+        protected static final Color BUTTON_COLOR = new Color(30, 30, 30);
+        protected static final Color BUTTON_HOVER_COLOR = new Color(40, 40, 40);
         
         // Animation properties
         private float fadeInAlpha = 0.0f;
@@ -1626,6 +1501,7 @@ public class Troubleshoot {
         private JPanel contentContainer;
         private final String title;
         private final Color accentColor;
+        private float slideOffset = 50.0f;
 
         public BaseSidebarPanel(String title) {
             this.title = title;
@@ -1645,7 +1521,7 @@ public class Troubleshoot {
             
             setLayout(new BorderLayout(0, 20));
             setBackground(PANEL_BACKGROUND);
-            setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+            setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
             
             add(createHeader(title), BorderLayout.NORTH);
             
@@ -1682,10 +1558,11 @@ public class Troubleshoot {
             contentContainer.add(content, BorderLayout.CENTER);
             
             // Start fade-in animation
-            fadeInTimer = new Timer(20, e -> {
+            fadeInTimer = new Timer(16, e -> {
                 fadeInAlpha = Math.min(1.0f, fadeInAlpha + 0.05f);
+                slideOffset = Math.max(0.0f, slideOffset - 2.5f);
                 
-                if (fadeInAlpha >= 1.0f) {
+                if (fadeInAlpha >= 1.0f && slideOffset <= 0) {
                     fadeInTimer.stop();
                     animationComplete = true;
                     setOpaque(true);
@@ -1701,45 +1578,16 @@ public class Troubleshoot {
         protected void paintComponent(Graphics g) {
             Graphics2D g2d = (Graphics2D) g.create();
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             
-            // Create gradient background with accent color influence
-            Point2D start = new Point2D.Float(0, 0);
-            Point2D end = new Point2D.Float(0, getHeight());
-            
-            // Blend the sidebar gradient with the accent color
-            Color gradStart = blendColors(SIDEBAR_GRADIENT_START, accentColor, 0.05f);
-            Color gradEnd = blendColors(SIDEBAR_GRADIENT_END, accentColor, 0.08f);
-            
-            LinearGradientPaint gradientPaint = new LinearGradientPaint(
-                start, end,
-                new float[]{0.0f, 1.0f},
-                new Color[]{gradStart, gradEnd}
-            );
+            // Simple black background
+            g2d.setColor(PANEL_BACKGROUND);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
             
             // Apply fade-in effect if animation is in progress
             if (!animationComplete) {
                 g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, fadeInAlpha));
+                g2d.translate(slideOffset, 0);
             }
-            
-            g2d.setPaint(gradientPaint);
-            g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 12, 12));
-            
-            // Add accent color line at top
-            g2d.setColor(accentColor);
-            g2d.fillRect(0, 0, getWidth(), 3);
-            
-            // Add subtle top highlight
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.15f));
-            Point2D highlightStart = new Point2D.Float(getWidth()/2, 0);
-            Point2D highlightEnd = new Point2D.Float(getWidth()/2, getHeight()/4);
-            LinearGradientPaint highlightPaint = new LinearGradientPaint(
-                highlightStart, highlightEnd,
-                new float[]{0.0f, 1.0f},
-                new Color[]{SIDEBAR_HIGHLIGHT, new Color(255, 255, 255, 0)}
-            );
-            g2d.setPaint(highlightPaint);
-            g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight()/4, 12, 12));
             
             g2d.dispose();
         }
@@ -1748,48 +1596,61 @@ public class Troubleshoot {
             JPanel headerPanel = new JPanel() {
                 @Override
                 protected void paintComponent(Graphics g) {
+                    super.paintComponent(g);
                     Graphics2D g2d = (Graphics2D) g.create();
                     g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     
-                    // Create header background with accent color influence
-                    Point2D start = new Point2D.Float(0, 0);
-                    Point2D end = new Point2D.Float(0, getHeight());
+                    // Draw header background
+                    g2d.setColor(new Color(5, 5, 5));
+                    g2d.fillRect(0, 0, getWidth(), getHeight());
                     
-                    // Blend header colors with accent color
-                    Color headerStart = blendColors(new Color(40, 40, 45), accentColor, 0.1f);
-                    Color headerEnd = blendColors(new Color(35, 35, 40), accentColor, 0.15f);
-                    
-                    LinearGradientPaint gradientPaint = new LinearGradientPaint(
-                        start, end,
-                        new float[]{0.0f, 1.0f},
-                        new Color[]{headerStart, headerEnd}
-                    );
-                    
-                    g2d.setPaint(gradientPaint);
-                    g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 8, 8));
-                    
-                    // Add accent line at bottom
-                    g2d.setColor(accentColor);
-                    g2d.fillRect(0, getHeight() - 2, getWidth(), 2);
+                    // Draw subtle accent line at bottom
+                    g2d.setColor(new Color(
+                        accentColor.getRed(),
+                        accentColor.getGreen(),
+                        accentColor.getBlue(),
+                        100
+                    ));
+                    g2d.fillRect(0, getHeight() - 1, getWidth(), 1);
                     
                     g2d.dispose();
                 }
             };
-            
             headerPanel.setLayout(new BorderLayout());
             headerPanel.setOpaque(false);
-            headerPanel.setPreferredSize(new Dimension(0, 50));
+            headerPanel.setPreferredSize(new Dimension(0, 45));
             headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
             
-            // Create title with enhanced styling
-            JLabel titleLabel = new JLabel(title);
-            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            titleLabel.setForeground(accentColor);
-            
-            // Add subtle shadow to text
-            titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-            titleLabel.putClientProperty(RenderingHints.KEY_TEXT_ANTIALIASING, 
-                                        RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            // Create title with subtle color
+            JLabel titleLabel = new JLabel(title) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                    
+                    // Draw text shadow
+                    g2d.setFont(getFont());
+                    g2d.setColor(new Color(0, 0, 0, 100));
+                    g2d.drawString(getText(), 1, getHeight() - 3);
+                    
+                    // Draw text with subtle gradient
+                    GradientPaint textGradient = new GradientPaint(
+                        0, 0, TEXT_COLOR,
+                        getWidth(), 0, new Color(
+                            accentColor.getRed(),
+                            accentColor.getGreen(),
+                            accentColor.getBlue(),
+                            200
+                        )
+                    );
+                    g2d.setPaint(textGradient);
+                    g2d.drawString(getText(), 0, getHeight() - 4);
+                    
+                    g2d.dispose();
+                }
+            };
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            titleLabel.setForeground(TEXT_COLOR);
             
             headerPanel.add(titleLabel, BorderLayout.CENTER);
             

@@ -17,25 +17,25 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 
 public class Main extends JFrame {
-    // Enhanced modern color scheme
-    private static final Color BACKGROUND_COLOR = new Color(24, 25, 28);      // Darker background
-    private static final Color MENU_BACKGROUND = new Color(32, 33, 36);       // Menu background
-    private static final Color MENU_SELECTED = new Color(40, 44, 52);         // Selected menu item
-    private static final Color TEXT_COLOR = new Color(232, 234, 237);         // Soft white
-    private static final Color ACCENT_COLOR = new Color(92, 124, 250);        // Vibrant blue
-    private static final Color HOVER_COLOR = new Color(50, 55, 65);           // Enhanced hover
-    private static final Color CARD_BACKGROUND = new Color(28, 30, 33);       // Card background
-    private static final Color BORDER_COLOR = new Color(52, 53, 65);          // Border for panels
+    // Enhanced modern color scheme with higher contrast
+    private static final Color BACKGROUND_COLOR = new Color(5, 5, 7);         // Deeper black background
+    private static final Color MENU_BACKGROUND = new Color(12, 12, 15);       // Darker menu background
+    private static final Color MENU_SELECTED = new Color(30, 32, 40);         // More visible selection
+    private static final Color TEXT_COLOR = new Color(255, 255, 255);         // Pure white text
+    private static final Color ACCENT_COLOR = new Color(64, 125, 255);        // Slightly darker blue
+    private static final Color HOVER_COLOR = new Color(35, 37, 45);           // More visible hover
+    private static final Color CARD_BACKGROUND = new Color(10, 10, 12);       // Darker card background
+    private static final Color BORDER_COLOR = new Color(45, 48, 55);          // More visible borders
     
-    // Menu icons colors
-    private static final Color HOME_COLOR = new Color(92, 124, 250);          // Blue
-    private static final Color CLEAN_COLOR = new Color(80, 200, 120);         // Green
-    private static final Color TROUBLESHOOT_COLOR = new Color(240, 130, 60);  // Orange
-    private static final Color FIREWALL_COLOR = new Color(220, 75, 75);       // Red
-    private static final Color AUDIT_COLOR = new Color(156, 39, 176);         // Purple
-    private static final Color REMEDIATE_COLOR = new Color(0, 188, 212);      // Cyan
-    private static final Color MALWARE_COLOR = new Color(255, 64, 129);       // Pink
-    private static final Color ASSISTANT_COLOR = new Color(255, 193, 7);      // Amber
+    // Menu icons colors with increased contrast
+    private static final Color HOME_COLOR = new Color(82, 140, 255);         // Brighter blue
+    private static final Color CLEAN_COLOR = new Color(65, 230, 130);        // More vibrant green
+    private static final Color TROUBLESHOOT_COLOR = new Color(255, 145, 45); // Brighter orange
+    private static final Color FIREWALL_COLOR = new Color(255, 80, 80);      // More vibrant red
+    private static final Color AUDIT_COLOR = new Color(180, 85, 255);        // Brighter purple
+    private static final Color REMEDIATE_COLOR = new Color(0, 220, 240);     // Brighter cyan
+    private static final Color MALWARE_COLOR = new Color(255, 70, 130);      // More vibrant pink
+    private static final Color ASSISTANT_COLOR = new Color(255, 210, 25);    // Brighter amber
 
     private final JPanel mainContentPanel;
     private final CardLayout cardLayout;
@@ -135,16 +135,16 @@ public class Main extends JFrame {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // Create gradient for header
+                // Enhanced gradient for header with more contrast
                 GradientPaint gradient = new GradientPaint(
-                    0, 0, new Color(32, 34, 37),
-                    0, getHeight(), new Color(26, 28, 31)
+                    0, 0, new Color(25, 27, 32),
+                    0, getHeight(), new Color(12, 12, 15)
                 );
                 g2d.setPaint(gradient);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
                 
-                // Draw subtle bottom border
-                g2d.setColor(BORDER_COLOR);
+                // More visible bottom border
+                g2d.setColor(new Color(BORDER_COLOR.getRed(), BORDER_COLOR.getGreen(), BORDER_COLOR.getBlue(), 80));
                 g2d.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
             }
         };
@@ -305,33 +305,30 @@ public class Main extends JFrame {
     }
 
     private void setupUIDefaults() {
-        // Set global UI properties
+        // Enhanced UI properties with higher contrast
         UIManager.put("Button.background", ACCENT_COLOR);
         UIManager.put("Button.foreground", TEXT_COLOR);
-        UIManager.put("Button.font", new Font("Segoe UI", Font.PLAIN, 13));
+        UIManager.put("Button.font", new Font("Segoe UI Semibold", Font.PLAIN, 13));
         UIManager.put("Button.focus", new Color(0, 0, 0, 0));
-        UIManager.put("Button.select", ACCENT_COLOR.darker());
+        UIManager.put("Button.select", ACCENT_COLOR.brighter());
         
-        // Additional UI customizations
-        UIManager.put("Label.font", new Font("Segoe UI", Font.PLAIN, 13));
-        UIManager.put("TextField.background", new Color(45, 47, 50));
+        // Higher contrast text field
+        UIManager.put("TextField.background", new Color(15, 15, 18));
         UIManager.put("TextField.foreground", TEXT_COLOR);
         UIManager.put("TextField.caretForeground", TEXT_COLOR);
-        UIManager.put("ScrollBar.thumb", new Color(90, 90, 95));
-        UIManager.put("ScrollBar.track", new Color(50, 50, 55));
         
-        // More specific dark mode settings
-        UIManager.put("ScrollBar.thumb", BORDER_COLOR);
+        // Enhanced scrollbar contrast
+        UIManager.put("ScrollBar.thumb", new Color(50, 53, 60));
+        UIManager.put("ScrollBar.track", new Color(12, 12, 15));
         UIManager.put("ScrollBar.thumbDarkShadow", BACKGROUND_COLOR);
-        UIManager.put("ScrollBar.thumbHighlight", HOVER_COLOR);
+        UIManager.put("ScrollBar.thumbHighlight", HOVER_COLOR.brighter());
         UIManager.put("ScrollBar.thumbShadow", MENU_BACKGROUND);
-        UIManager.put("ScrollBar.track", BACKGROUND_COLOR);
         
-        // Add these if they aren't already there:
+        // Additional UI improvements
         UIManager.put("Panel.background", BACKGROUND_COLOR);
         UIManager.put("Panel.foreground", TEXT_COLOR);
-        UIManager.put("Button.foreground", TEXT_COLOR);
         UIManager.put("Label.foreground", TEXT_COLOR);
+        UIManager.put("Label.font", new Font("Segoe UI", Font.PLAIN, 13));
     }
 
     private JPanel createSideMenu() {
@@ -581,12 +578,12 @@ public class Main extends JFrame {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // Draw panel background
-                g2d.setColor(new Color(26, 27, 30));
+                // Higher contrast status panel background
+                g2d.setColor(new Color(18, 20, 24));
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 
-                // Draw border
-                g2d.setColor(new Color(44, 46, 52));
+                // More visible border
+                g2d.setColor(new Color(50, 53, 60));
                 g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
             }
         };
