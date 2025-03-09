@@ -34,7 +34,7 @@ public class Clean extends JPanel {
     private void setupPanel() {
         setLayout(new BorderLayout());
         setBackground(BACKGROUND_COLOR);
-        setBorder(new EmptyBorder(25, 25, 25, 25));
+        setBorder(new EmptyBorder(15, 15, 15, 15));
     }
 
     private void initializeComponents() {
@@ -48,13 +48,16 @@ public class Clean extends JPanel {
         // Add cleaning cards with responsive layout
         addCleaningCards(mainContent, gbc);
 
-        // Wrap in scroll pane with custom UI
+        // Remove all inner padding from scrollPane to maximize available space
         JScrollPane scrollPane = new JScrollPane(mainContent);
         scrollPane.setBorder(null);
         scrollPane.setBackground(BACKGROUND_COLOR);
         scrollPane.getViewport().setBackground(BACKGROUND_COLOR);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
+        // Important: Configure horizontal scrolling behavior
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);  // Prevent horizontal scrolling
+        scrollPane.getViewport().setPreferredSize(new Dimension(scrollPane.getWidth(), scrollPane.getHeight()));
+        
         // Custom scrollbar UI
         scrollPane.getVerticalScrollBar().setUI(new CustomScrollBarUI());
         
@@ -107,16 +110,16 @@ public class Clean extends JPanel {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // Animated gradient background
+                // Larger gradient background
                 GradientPaint gradient = new GradientPaint(
-                    0, 0, new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 30),
-                    getWidth(), getHeight(), new Color(SECONDARY_COLOR.getRed(), SECONDARY_COLOR.getGreen(), SECONDARY_COLOR.getBlue(), 30)
+                    0, 0, new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 40),
+                    getWidth(), getHeight(), new Color(SECONDARY_COLOR.getRed(), SECONDARY_COLOR.getGreen(), SECONDARY_COLOR.getBlue(), 40)
                 );
                 g2d.setPaint(gradient);
-                g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 20, 20));
+                g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 25, 25));
 
-                // Animated glow effects
-                int glowSize = (int)(200 * pulseScale);
+                // Larger glows for more presence
+                int glowSize = (int)(250 * pulseScale);
                 float alpha = (float)(0.3 + 0.1 * Math.sin(headerGlow));
                 g2d.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 
                     (int)(alpha * 255)));
@@ -129,7 +132,7 @@ public class Clean extends JPanel {
                 g2d.fillOval(getWidth()/4 - glowSize/2, -glowSize/3, glowSize, glowSize);
             }
         };
-        headerPanel.setBorder(new EmptyBorder(40, 30, 40, 30));
+        headerPanel.setBorder(new EmptyBorder(25, 40, 25, 40));
         headerPanel.setOpaque(false);
 
         // Animated title with glow effect
@@ -140,7 +143,7 @@ public class Clean extends JPanel {
                 g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 
                 // Draw glow
-                g2d.setFont(getFont());
+                g2d.setFont(new Font("Segoe UI", Font.BOLD, 38));
                 g2d.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 
                     (int)(50 * pulseScale)));
                 g2d.drawString(getText(), 2, getHeight() - 4);
@@ -150,13 +153,29 @@ public class Clean extends JPanel {
                 g2d.drawString(getText(), 0, getHeight() - 6);
             }
         };
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 38));
         titleLabel.setForeground(TEXT_COLOR);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         // Animated subtitle
-        JLabel subtitleLabel = new JLabel("Optimize your system performance");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        JLabel subtitleLabel = new JLabel("Optimize your system performance") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow
+                g2d.setFont(new Font("Segoe UI", Font.BOLD, 20));
+                g2d.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 
+                    (int)(50 * pulseScale)));
+                g2d.drawString(getText(), 2, getHeight() - 4);
+                
+                // Draw main text
+                g2d.setColor(TEXT_COLOR);
+                g2d.drawString(getText(), 0, getHeight() - 6);
+            }
+        };
+        subtitleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         subtitleLabel.setForeground(SECONDARY_TEXT);
         subtitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -167,23 +186,39 @@ public class Clean extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = GridBagConstraints.REMAINDER;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(0, 0, 30, 0);
+        gbc.insets = new Insets(0, 0, 25, 0);
+        gbc.weighty = 0.0;
         panel.add(headerPanel, gbc);
     }
 
+    private Font getScaledFont(String fontName, int style, int baseSize, Container container) {
+        int scaledSize = Math.max(baseSize/2, baseSize * container.getWidth() / 1200);
+        return new Font(fontName, style, scaledSize);
+    }
+
     private void addCleaningCards(JPanel panel, GridBagConstraints gbc) {
-        // Responsive grid panel
-        JPanel cardsPanel = new JPanel(new GridBagLayout());
+        // Use BoxLayout instead - this arranges components horizontally with equal spacing
+        JPanel cardsPanel = new JPanel();
+        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.X_AXIS));
         cardsPanel.setOpaque(false);
-
-        // Add cards with responsive constraints
-        addResponsiveCard(cardsPanel, createCleaningCard("Quick Clean", "Temporary Files", 
-            "Clean temporary files to free up disk space", "PythonScripts/clean/temp.py"), 0);
-        addResponsiveCard(cardsPanel, createCleaningCard("Deep Clean", "Prefetch Files", 
-            "Remove prefetch files to improve performance", "PythonScripts/clean/prefetch.py"), 1);
-        addResponsiveCard(cardsPanel, createCleaningCard("Full Clean", "Complete Cleanup", 
-            "Perform a thorough system cleanup", "PythonScripts/clean/temp_prefetch.py"), 2);
-
+        
+        // Create the cards with fixed maximum width to prevent overflow
+        JPanel quickClean = createCleaningCard("Quick Clean", "Temporary Files", 
+            "Clean temporary files to free up disk space", "PythonScripts/clean/temp.py");
+        JPanel deepClean = createCleaningCard("Deep Clean", "Prefetch Files", 
+            "Remove prefetch files to improve performance", "PythonScripts/clean/prefetch.py");
+        JPanel fullClean = createCleaningCard("Full Clean", "Complete Cleanup", 
+            "Perform a thorough system cleanup", "PythonScripts/clean/temp_prefetch.py");
+        
+        // Add spacing between cards
+        cardsPanel.add(Box.createHorizontalStrut(10));
+        cardsPanel.add(quickClean);
+        cardsPanel.add(Box.createHorizontalStrut(20));
+        cardsPanel.add(deepClean);
+        cardsPanel.add(Box.createHorizontalStrut(20));
+        cardsPanel.add(fullClean);
+        cardsPanel.add(Box.createHorizontalStrut(10));
+        
         gbc.gridy = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
@@ -198,7 +233,8 @@ public class Clean extends JPanel {
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(10, 10, 10, 10);
+        int cardPadding = Math.max(15, panel.getWidth() / 50);
+        gbc.insets = new Insets(cardPadding, cardPadding, cardPadding, cardPadding);
         panel.add(card, gbc);
     }
 
@@ -235,23 +271,49 @@ public class Clean extends JPanel {
 
                 // Draw hover effect
                 if (isHovered) {
-                    g2d.setColor(PRIMARY_COLOR);
+                    // Draw border glow
+                    g2d.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), 
+                        PRIMARY_COLOR.getBlue(), 100));
+                    g2d.setStroke(new BasicStroke(3f));
+                    g2d.draw(new RoundRectangle2D.Float(2, 2, getWidth()-4, getHeight()-4, 18, 18));
+                    
+                    // Draw subtle gradient overlay
+                    GradientPaint gp = new GradientPaint(0, 0, 
+                        new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 30),
+                        0, getHeight(), 
+                        new Color(SECONDARY_COLOR.getRed(), SECONDARY_COLOR.getGreen(), SECONDARY_COLOR.getBlue(), 10));
+                    g2d.setPaint(gp);
                     g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 20, 20));
                 }
 
                 // Draw progress circle
-                int size = 80;
+                int size = 70;  // Slightly smaller circle (was 80)
                 int x = (getWidth() - size) / 2;
-                int y = 40;
+                int y = (getHeight() / 2) - (size / 2);  // Position at about 1/3 from top instead of center
 
-                // Draw background circle
+                // Make the progress percentage more visible
+                g2d.setFont(new Font("Segoe UI", Font.BOLD, 20));  // Larger font size
+
+                // Draw background with slight transparency
                 g2d.setStroke(new BasicStroke(8, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g2d.setColor(PROGRESS_BACKGROUND);
+                g2d.setColor(new Color(PROGRESS_BACKGROUND.getRed(), PROGRESS_BACKGROUND.getGreen(), 
+                    PROGRESS_BACKGROUND.getBlue(), 180));
                 g2d.drawArc(x, y, size, size, 0, 360);
 
-                // Draw progress
+                // Draw progress with glow effect
                 g2d.setColor(PRIMARY_COLOR);
                 g2d.drawArc(x, y, size, size, 90, -(int)(progressAngle * progress));
+
+                // Add center text showing percentage
+                if (progress > 0) {
+                    g2d.setFont(new Font("Segoe UI", Font.BOLD, size/3));  // Larger percentage text
+                    g2d.setColor(TEXT_COLOR);
+                    String progressText = (int)(progress * 100) + "%";
+                    FontMetrics fm = g2d.getFontMetrics();
+                    g2d.drawString(progressText, 
+                        x + size/2 - fm.stringWidth(progressText)/2,
+                        y + size/2 + fm.getHeight()/3);
+                }
             }
 
             public void startProgress() {
@@ -273,7 +335,6 @@ public class Clean extends JPanel {
         // Create instance of our custom panel
         CleaningCardPanel card = new CleaningCardPanel();
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
-        card.setPreferredSize(new Dimension(300, 400));
 
         // Content Panel
         JPanel contentPanel = new JPanel();
@@ -282,19 +343,19 @@ public class Clean extends JPanel {
 
         // Title
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(TEXT_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Subtitle
         JLabel subtitleLabel = new JLabel(subtitle);
-        subtitleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        subtitleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         subtitleLabel.setForeground(SECONDARY_TEXT);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Description
         JLabel descLabel = new JLabel("<html><div style='text-align: center;'>" + description + "</div></html>");
-        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         descLabel.setForeground(SECONDARY_TEXT);
         descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -311,21 +372,35 @@ public class Clean extends JPanel {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+                // Create gradient background
+                GradientPaint gp;
                 if (getModel().isPressed()) {
-                    g2d.setColor(PRIMARY_COLOR.darker());
+                    gp = new GradientPaint(0, 0, PRIMARY_COLOR.darker(), 
+                                          0, getHeight(), SECONDARY_COLOR.darker());
                 } else if (getModel().isRollover()) {
-                    g2d.setColor(SECONDARY_COLOR);
+                    gp = new GradientPaint(0, 0, PRIMARY_COLOR.brighter(), 
+                                          0, getHeight(), SECONDARY_COLOR);
                 } else {
-                    g2d.setColor(PRIMARY_COLOR);
+                    gp = new GradientPaint(0, 0, PRIMARY_COLOR, 
+                                          0, getHeight(), SECONDARY_COLOR);
                 }
-
+                
+                // Fill button with gradient
+                g2d.setPaint(gp);
                 g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 15, 15));
+                
+                // Add subtle button glow
+                if (getModel().isRollover() && !getModel().isPressed()) {
+                    g2d.setColor(new Color(255, 255, 255, 40));
+                    g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight()/2, 15, 15));
+                }
+                
                 super.paintComponent(g);
             }
         };
-        cleanButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        cleanButton.setFont(new Font("Segoe UI", Font.BOLD, 18));
         cleanButton.setForeground(TEXT_COLOR);
-        cleanButton.setPreferredSize(new Dimension(200, 40));
+        cleanButton.setPreferredSize(new Dimension(230, 50));
         cleanButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         cleanButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         cleanButton.addActionListener(e -> {
@@ -333,19 +408,31 @@ public class Clean extends JPanel {
             startCleanup(script);
         });
 
-        // Add components
-        contentPanel.add(Box.createVerticalGlue());
+        // Add components with flexible spacing
+        contentPanel.add(Box.createVerticalStrut(10));  // Reduced from 20
         contentPanel.add(titleLabel);
-        contentPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        contentPanel.add(Box.createVerticalStrut(5));   // Reduced from 8
         contentPanel.add(subtitleLabel);
-        contentPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        contentPanel.add(Box.createVerticalStrut(5));   // Reduced from 10
         contentPanel.add(descLabel);
-        contentPanel.add(Box.createRigidArea(new Dimension(0, 30)));
+        contentPanel.add(Box.createVerticalGlue());     // Keep this to push the button down
         contentPanel.add(cleanButton);
-        contentPanel.add(Box.createVerticalGlue());
+        contentPanel.add(Box.createVerticalStrut(12));  // Reduced from 25
 
         card.add(contentPanel, BorderLayout.CENTER);
+
+        // Set maximum width to prevent overflow
+        card.setMaximumSize(new Dimension(350, 450));
+        
+        // Force all cards to have equal size
+        card.setPreferredSize(new Dimension(290, 300));  // 25% shorter
+        card.setMinimumSize(new Dimension(250, 250));   // Reduced minimum height
+        
         return card;
+    }
+
+    private Dimension getScaledSpacing(Container container, int baseSize) {
+        return new Dimension(0, Math.max(baseSize/2, baseSize * container.getHeight() / 400));
     }
 
     private void startCleanup(String script) {
@@ -389,6 +476,22 @@ public class Clean extends JPanel {
             window.addComponentListener(new ComponentAdapter() {
                 @Override
                 public void componentResized(ComponentEvent e) {
+                    // Get the current window width
+                    int width = getWidth();
+                    
+                    // Adjust card size based on window width
+                    JPanel mainContent = (JPanel)((JScrollPane)getComponent(0)).getViewport().getView();
+                    JPanel cardsPanel = (JPanel)mainContent.getComponent(1);
+                    
+                    Component[] cards = cardsPanel.getComponents();
+                    for (Component comp : cards) {
+                        if (comp instanceof JPanel && !(comp instanceof Box.Filler)) {
+                            // Adjust maximum width based on window size
+                            int cardWidth = Math.min(290, (width - 100) / 3);
+                            comp.setPreferredSize(new Dimension(cardWidth, 400));
+                        }
+                    }
+                    
                     revalidate();
                     repaint();
                 }

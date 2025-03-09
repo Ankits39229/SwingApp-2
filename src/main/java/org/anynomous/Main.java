@@ -4,43 +4,61 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
-import javax.swing.border.EmptyBorder;
+// import javax.swing.border.EmptyBorder;
 import javax.swing.SwingWorker;
 import java.util.HashMap;
 import java.util.Map;
+// import java.util.Random;
+// import java.awt.geom.AffineTransform;
+// import java.awt.Composite;
 //import com.github.weis.jide.flatlaf.FlatDarkLaf;
 // Change the import from
 //import com.github.weis.jide.flatlaf.*;flatlaf
 
 // To the correct one:
 import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.FlatLaf;
+// import com.formdev.flatlaf.FlatLaf;
+// import main.java.org.anynomous.utils.IconLoader;
 
 public class Main extends JFrame {
-    // Enhanced modern color scheme with higher contrast
-    private static final Color BACKGROUND_COLOR = new Color(5, 5, 7);         // Deeper black background
-    private static final Color MENU_BACKGROUND = new Color(12, 12, 15);       // Darker menu background
-    private static final Color MENU_SELECTED = new Color(30, 32, 40);         // More visible selection
+    // Enhanced modern color scheme with even darker contrast
+    private static final Color BACKGROUND_COLOR = new Color(2, 2, 4);         // Deeper black background
+    private static final Color MENU_BACKGROUND = new Color(8, 8, 10);         // Darker menu background
+    private static final Color MENU_SELECTED = new Color(20, 22, 28);         // More visible selection
     private static final Color TEXT_COLOR = new Color(255, 255, 255);         // Pure white text
-    private static final Color ACCENT_COLOR = new Color(64, 125, 255);        // Slightly darker blue
-    private static final Color HOVER_COLOR = new Color(35, 37, 45);           // More visible hover
-    private static final Color CARD_BACKGROUND = new Color(10, 10, 12);       // Darker card background
-    private static final Color BORDER_COLOR = new Color(45, 48, 55);          // More visible borders
+    private static final Color ACCENT_COLOR = new Color(50, 100, 220);        // Darker blue
+    private static final Color HOVER_COLOR = new Color(25, 27, 32);           // More visible hover
+    private static final Color CARD_BACKGROUND = new Color(5, 5, 7);          // Darker card background
+    private static final Color BORDER_COLOR = new Color(35, 38, 45);          // More visible borders
     
     // Menu icons colors with increased contrast
-    private static final Color HOME_COLOR = new Color(82, 140, 255);         // Brighter blue
-    private static final Color CLEAN_COLOR = new Color(65, 230, 130);        // More vibrant green
-    private static final Color TROUBLESHOOT_COLOR = new Color(255, 145, 45); // Brighter orange
-    private static final Color FIREWALL_COLOR = new Color(255, 80, 80);      // More vibrant red
-    private static final Color AUDIT_COLOR = new Color(180, 85, 255);        // Brighter purple
-    private static final Color REMEDIATE_COLOR = new Color(0, 220, 240);     // Brighter cyan
-    private static final Color MALWARE_COLOR = new Color(255, 70, 130);      // More vibrant pink
-    private static final Color ASSISTANT_COLOR = new Color(255, 210, 25);    // Brighter amber
+    private static final Color HOME_COLOR = new Color(70, 120, 255);         // Brighter blue
+    private static final Color CLEAN_COLOR = new Color(50, 210, 110);        // More vibrant green
+    private static final Color TROUBLESHOOT_COLOR = new Color(255, 130, 40); // Brighter orange
+    private static final Color FIREWALL_COLOR = new Color(255, 70, 70);      // More vibrant red
+    private static final Color AUDIT_COLOR = new Color(160, 70, 240);        // Brighter purple
+    private static final Color REMEDIATE_COLOR = new Color(0, 200, 220);     // Brighter cyan
+    private static final Color MALWARE_COLOR = new Color(240, 60, 120);      // More vibrant pink
+    private static final Color ASSISTANT_COLOR = new Color(240, 200, 20);    // Brighter amber
 
     private final JPanel mainContentPanel;
     private final CardLayout cardLayout;
     private final Map<String, JPanel> menuItems = new HashMap<>();
     private String currentCard = "Home";
+
+    // Add this at the top of your class to store icon URLs
+    private static final Map<String, String> ICON_URLS = new HashMap<>();
+    static {
+        // Free SVG icons from various sources
+        ICON_URLS.put("Home", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/house.svg");
+        ICON_URLS.put("Clean", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/trash.svg");
+        ICON_URLS.put("Troubleshoot", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/tools.svg");
+        ICON_URLS.put("FIREWALL", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/shield.svg");
+        ICON_URLS.put("Audit", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/clipboard-check.svg");
+        ICON_URLS.put("Remediate", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/bandaid.svg");
+        ICON_URLS.put("Malware", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/bug.svg");
+        ICON_URLS.put("Assistant", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/headset.svg");
+    }
 
     public Main() {
         // Set dark title bar with FlatLaf
@@ -66,8 +84,8 @@ public class Main extends JFrame {
         
         setTitle("Windows Security Suite");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1280, 800);  // Larger default size
-        setMinimumSize(new Dimension(1000, 700)); // Set minimum size
+        setSize(1300, 800);  // Larger default size
+        setMinimumSize(new Dimension(1280, 800)); // Set minimum size
         setLayout(new BorderLayout(0, 0));
         getContentPane().setBackground(BACKGROUND_COLOR);
 
@@ -96,7 +114,7 @@ public class Main extends JFrame {
         mainContentPanel.add(new Home(), "Home");
         mainContentPanel.add(new Clean(), "Clean");
         mainContentPanel.add(new Troubleshoot().getSplitPane(), "Troubleshoot");
-        mainContentPanel.add(new Firewall(), "FIREWALL");
+        mainContentPanel.add(new Firewall(), "Firewall");
         mainContentPanel.add(new Audit(), "Audit");
         mainContentPanel.add(new Remediate(), "Remediate");
         mainContentPanel.add(new Malware(), "Malware");
@@ -125,6 +143,23 @@ public class Main extends JFrame {
         
         // Set initial selected menu item
         selectMenuItem("Home");
+
+        // Add chat bubble
+        ChatBubble chatBubble = new ChatBubble();
+        JLayeredPane layeredPane = getLayeredPane();
+        layeredPane.add(chatBubble, JLayeredPane.POPUP_LAYER);
+        
+        // Position the chat bubble in the bottom-right corner
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int x = getWidth() - chatBubble.getPreferredSize().width - 20;
+                int y = getHeight() - chatBubble.getPreferredSize().height - 20;
+                chatBubble.setBounds(x, y, 
+                    chatBubble.getPreferredSize().width, 
+                    chatBubble.getPreferredSize().height);
+            }
+        });
     }
 
     private JPanel createHeaderPanel() {
@@ -332,243 +367,47 @@ public class Main extends JFrame {
     }
 
     private JPanel createSideMenu() {
-        JPanel sideMenu = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Create gradient background
-                GradientPaint gradient = new GradientPaint(
-                    0, 0, MENU_BACKGROUND,
-                    getWidth(), 0, new Color(26, 27, 30)
-                );
-                g2d.setPaint(gradient);
-                g2d.fillRect(0, 0, getWidth(), getHeight());
-                
-                // Draw subtle right border
-                g2d.setColor(BORDER_COLOR);
-                g2d.drawLine(getWidth() - 1, 0, getWidth() - 1, getHeight());
-            }
-        };
-        sideMenu.setPreferredSize(new Dimension(280, getHeight()));
-        sideMenu.setLayout(new BoxLayout(sideMenu, BoxLayout.Y_AXIS));
-        sideMenu.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
-
-        // Menu items with icons and categories
-        createMenuCategory(sideMenu, "MAIN");
-        addMenuItem(sideMenu, "Home", "Home", HOME_COLOR);
+        // Create the sidebar menu with your desired width
+        SidebarMenu sideMenu = new SidebarMenu(280);
         
-        createMenuCategory(sideMenu, "SECURITY");
-        addMenuItem(sideMenu, "Clean", "Clean", CLEAN_COLOR);
-        addMenuItem(sideMenu, "Troubleshoot", "Troubleshoot", TROUBLESHOOT_COLOR);
-        addMenuItem(sideMenu, "Firewall", "FIREWALL", FIREWALL_COLOR);
+        // Set colors to match your application theme
+        sideMenu.setMenuBackgroundColor(MENU_BACKGROUND);
+        sideMenu.setSelectedColor(MENU_SELECTED);
+        sideMenu.setHoverColor(HOVER_COLOR);
+        sideMenu.setTextColor(TEXT_COLOR);
         
-        createMenuCategory(sideMenu, "ADVANCED");
-        addMenuItem(sideMenu, "Audit", "Audit", AUDIT_COLOR);
-        addMenuItem(sideMenu, "Remediate", "Remediate", REMEDIATE_COLOR);
-        addMenuItem(sideMenu, "Malware", "Malware", MALWARE_COLOR);
-        addMenuItem(sideMenu, "Assistant", "Assistant", ASSISTANT_COLOR);
-
-        // Add status panel at bottom
-        sideMenu.add(Box.createVerticalGlue());
-        sideMenu.add(createStatusPanel());
+        // Add categories and menu items
+        sideMenu.addCategory("MAIN");
+        sideMenu.addMenuItem("Home", "Home", HOME_COLOR);
+        
+        sideMenu.addCategory("SECURITY");
+        sideMenu.addMenuItem("Clean", "Clean", CLEAN_COLOR);
+        sideMenu.addMenuItem("Troubleshoot", "Troubleshoot", TROUBLESHOOT_COLOR);
+        sideMenu.addMenuItem("Firewall", "Firewall", FIREWALL_COLOR);
+        
+        sideMenu.addCategory("ADVANCED");
+        sideMenu.addMenuItem("Audit", "Audit", AUDIT_COLOR);
+        sideMenu.addMenuItem("Remediate", "Remediate", REMEDIATE_COLOR);
+        sideMenu.addMenuItem("Malware", "Malware", MALWARE_COLOR);
+        sideMenu.addMenuItem("Assistant", "Assistant", ASSISTANT_COLOR);
+        
+        // Add flexible space to push the status panel to the bottom
+        sideMenu.addFlexibleSpace();
+        
+        // Add a status panel at the bottom
+        sideMenu.addComponent(createStatusPanel());
+        
+        // Set up the selection change handler
+        sideMenu.setOnSelectionChanged(cardName -> {
+            // Show the corresponding card
+            cardLayout.show(mainContentPanel, cardName);
+            currentCard = cardName;
+        });
+        
+        // Set initial selection
+        sideMenu.selectMenuItem("Home");
         
         return sideMenu;
-    }
-    
-    private void createMenuCategory(JPanel menu, String categoryName) {
-        JLabel category = new JLabel(categoryName);
-        category.setForeground(new Color(150, 150, 160));
-        category.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        category.setBorder(BorderFactory.createEmptyBorder(15, 20, 5, 10));
-        category.setAlignmentX(Component.LEFT_ALIGNMENT);
-        menu.add(category);
-    }
-    
-    private void addMenuItem(JPanel menu, String text, String cardName, Color iconColor) {
-        JPanel item = new JPanel();
-        item.setName(cardName);
-        item.setLayout(new BoxLayout(item, BoxLayout.X_AXIS));
-        item.setBackground(MENU_BACKGROUND);
-        item.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-        item.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
-        item.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // Create animated icon for menu item
-        JPanel iconPanel = new JPanel() {
-            private final Timer pulseTimer = createPulseTimer(this);
-            private float pulseScale = 1.0f;
-            private boolean hovering = false;
-            
-            {
-                setOpaque(false);
-                setPreferredSize(new Dimension(30, 30));
-                setMaximumSize(new Dimension(30, 30));
-                
-                addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        hovering = true;
-                        if (!pulseTimer.isRunning()) {
-                            pulseTimer.start();
-                        }
-                    }
-                    
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        hovering = false;
-                        if (cardName.equals(currentCard)) {
-                            // Keep animation for selected item
-                        } else {
-                            pulseTimer.stop();
-                            pulseScale = 1.0f;
-                            repaint();
-                        }
-                    }
-                });
-            }
-            
-            private Timer createPulseTimer(JPanel panel) {
-                return new Timer(50, e -> {
-                    pulseScale = 1.0f + 0.1f * (float)Math.sin(System.currentTimeMillis() / 300.0);
-                    panel.repaint();
-                });
-            }
-            
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                boolean isSelected = cardName.equals(currentCard);
-                int size = 18;
-                int x = (getWidth() - size) / 2;
-                int y = (getHeight() - size) / 2;
-                
-                // Draw icon background with pulsing effect if selected or hovered
-                if (isSelected || hovering) {
-                    int bgSize = (int)(size * pulseScale);
-                    int bgX = (getWidth() - bgSize) / 2;
-                    int bgY = (getHeight() - bgSize) / 2;
-                    
-                    // Start pulse animation if selected
-                    if (isSelected && !pulseTimer.isRunning()) {
-                        pulseTimer.start();
-                    }
-                    
-                    // Draw glowing background
-                    g2d.setColor(new Color(iconColor.getRed(), iconColor.getGreen(), iconColor.getBlue(), 30));
-                    g2d.fillOval(bgX, bgY, bgSize, bgSize);
-                }
-                
-                // Draw the appropriate icon based on menu item
-                g2d.setColor(iconColor);
-                
-                if (text.equals("Home")) {
-                    // Home icon
-                    int[] xPoints = {x + size/2, x + size, x + size, x + 3*size/4, x + 3*size/4, x + size/4, x + size/4, x, x};
-                    int[] yPoints = {y, y + size/2, y + size, y + size, y + size/2, y + size/2, y + size, y + size, y + size/2};
-                    g2d.fillPolygon(xPoints, yPoints, 9);
-                } else if (text.equals("Clean")) {
-                    // Clean icon
-                    g2d.fillOval(x, y, size, size);
-                    g2d.setColor(MENU_BACKGROUND);
-                    g2d.fillOval(x + size/4, y + size/4, size/2, size/2);
-                } else if (text.equals("Troubleshoot")) {
-                    // Troubleshoot icon
-                    g2d.fillRect(x, y + 3*size/4, size/3, size/4);
-                    g2d.fillRect(x + size/3, y + size/2, size/3, size/2);
-                    g2d.fillRect(x + 2*size/3, y, size/3, size);
-                } else if (text.equals("Firewall")) {
-                    // Firewall icon
-                    g2d.fillRect(x, y, size, size/5);
-                    g2d.fillRect(x, y + 2*size/5, size, size/5);
-                    g2d.fillRect(x, y + 4*size/5, size, size/5);
-                } else if (text.equals("Audit")) {
-                    // Audit icon
-                    g2d.fillOval(x + size/4, y, size/2, size/2);
-                    g2d.fillRect(x + 2*size/5, y + size/2, size/5, size/2);
-                    g2d.fillOval(x, y + 3*size/4, size, size/4);
-                } else if (text.equals("Remediate")) {
-                    // Remediate icon
-                    g2d.fillRect(x, y + size/3, size, size/3);
-                    g2d.fillRect(x + size/3, y, size/3, size);
-                } else if (text.equals("Malware")) {
-                    // Malware icon
-                    g2d.fillOval(x, y, size, size);
-                    g2d.setColor(MENU_BACKGROUND);
-                    for (int i = 0; i < 3; i++) {
-                        int dotSize = size/5;
-                        g2d.fillOval(x + size/2 - dotSize/2, y + i*size/3 + size/6 - dotSize/2, dotSize, dotSize);
-                    }
-                } else { // Assistant
-                    // Assistant icon
-                    g2d.fillRoundRect(x, y, size, size, size/3, size/3);
-                    g2d.setColor(MENU_BACKGROUND);
-                    g2d.fillOval(x + size/4, y + size/3, size/5, size/5);
-                    g2d.fillOval(x + 3*size/5, y + size/3, size/5, size/5);
-                    g2d.fillRect(x + size/4, y + 2*size/3, size/2, size/6);
-                }
-            }
-        };
-
-        // Menu text
-        JLabel label = new JLabel(text);
-        label.setForeground(TEXT_COLOR);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-
-        item.add(iconPanel);
-        item.add(Box.createRigidArea(new Dimension(15, 0)));
-        item.add(label);
-        item.add(Box.createHorizontalGlue());
-
-        // Add hover and selection effects
-        item.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                selectMenuItem(cardName);
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                if (!cardName.equals(currentCard)) {
-                    item.setBackground(HOVER_COLOR);
-                }
-                setCursor(new Cursor(Cursor.HAND_CURSOR));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                if (!cardName.equals(currentCard)) {
-                    item.setBackground(MENU_BACKGROUND);
-                }
-                setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-            }
-        });
-
-        // Store menu item in map for later reference
-        menuItems.put(cardName, item);
-        menu.add(item);
-        menu.add(Box.createRigidArea(new Dimension(0, 2)));
-    }
-    
-    private void selectMenuItem(String cardName) {
-        // Deselect previous item
-        if (menuItems.containsKey(currentCard)) {
-            menuItems.get(currentCard).setBackground(MENU_BACKGROUND);
-        }
-        
-        // Select new item
-        currentCard = cardName;
-        if (menuItems.containsKey(cardName)) {
-            menuItems.get(cardName).setBackground(MENU_SELECTED);
-        }
-        
-        // Show the corresponding card
-        cardLayout.show(mainContentPanel, cardName);
     }
     
     private JPanel createStatusPanel() {
@@ -655,6 +494,19 @@ public class Main extends JFrame {
         statusPanel.add(statusInfo, BorderLayout.CENTER);
         
         return statusPanel;
+    }
+
+    private void selectMenuItem(String cardName) {
+        // Reset background of all menu items
+        menuItems.forEach((key, item) -> item.setBackground(MENU_BACKGROUND));
+        
+        // Set selected item background
+        JPanel selectedItem = menuItems.get(cardName);
+        if (selectedItem != null) {
+            selectedItem.setBackground(MENU_SELECTED);
+            currentCard = cardName;
+            cardLayout.show(mainContentPanel, cardName);
+        }
     }
 
     public static void main(String[] args) {

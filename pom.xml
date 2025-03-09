@@ -23,12 +23,7 @@
         <maven-surefire-plugin.version>3.2.3</maven-surefire-plugin.version>
     </properties>
 
-<!--    <?xml version="1.0" encoding="utf-8"?>-->
-<!--    <network-security-config>-->
-<!--        <domain-config cleartextTrafficPermitted="true">-->
-<!--            <domain includeSubdomains="true">14.195.19.210</domain>-->
-<!--        </domain-config>-->
-<!--    </network-security-config>-->
+
 
 
 
@@ -96,6 +91,20 @@
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20231013</version>
+        </dependency>
+
+        <!-- Batik SVG dependencies -->
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-all</artifactId>
+            <version>1.16</version>
+        </dependency>
+        
+        <!-- Required for PNG writing -->
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>xmlgraphics-commons</artifactId>
+            <version>2.8</version>
         </dependency>
     </dependencies>
 
