@@ -131,7 +131,7 @@ java -jar target/swingapp-1.0-SNAPSHOT.jar
 ```
 
 ## 🏗️ Project Structure Explained
-SWINGAPP/
+```SWINGAPP/
 ├── src/ # Java source files
 │ └── main/
 │ └── java/
@@ -153,6 +153,7 @@ SWINGAPP/
 ├── Bat_Scripts/ # Windows batch utilities
 ├── pom.xml # Maven configuration
 └── requirements.txt # Python dependencies
+```
 
 ## 🔐 Security Features In-Depth
 
