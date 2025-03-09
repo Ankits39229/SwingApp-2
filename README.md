@@ -204,8 +204,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support & Contact
 
 - GitHub Issues: For bug reports and feature requests
-- Email: [your-email@domain.com]
-- Documentation: [Wiki link]
+- Email: [ankits39220@gmail.com]
+- Documentation: [comming-soon]
 
 ## 🔄 Updates & Maintenance
 
@@ -215,5 +215,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Continuous ML model improvements
 
 ---
-Built with ❤️ for Windows security
+Built for Windows security
 
