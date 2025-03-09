@@ -205,8 +205,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support & Contact
 
 - GitHub Issues: For bug reports and feature requests
-- Email: [ankits39220@gmail.com]
-- Documentation: [comming-soon]
+- Email: ankits39220@gmail.com
+- Documentation: https://github.com/Ankits39229/SwingApp-2/wiki
 
 ## 🔄 Updates & Maintenance
 
