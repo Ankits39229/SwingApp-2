@@ -98,8 +98,8 @@ python-dotenv>=0.19.0
 ### 1. Basic Setup
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/windows-security-suite.git
-cd windows-security-suite
+git clone https://github.com/Ankits39229/SwingApp-2.git
+cd SWINGAPP
 
 # Build Java application
 mvn clean install
@@ -131,7 +131,7 @@ java -jar target/swingapp-1.0-SNAPSHOT.jar
 ```
 
 ## 🏗️ Project Structure Explained
-windows-security-suite/
+```SWINGAPP/
 ├── src/ # Java source files
 │ └── main/
 │ └── java/
@@ -153,6 +153,7 @@ windows-security-suite/
 ├── Bat_Scripts/ # Windows batch utilities
 ├── pom.xml # Maven configuration
 └── requirements.txt # Python dependencies
+```
 
 ## 🔐 Security Features In-Depth
 
@@ -204,8 +205,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support & Contact
 
 - GitHub Issues: For bug reports and feature requests
-- Email: [your-email@domain.com]
-- Documentation: [Wiki link]
+- Email: ankits39220@gmail.com
+- Documentation: [Here](https://github.com/Ankits39229/SwingApp-2/wiki)
 
 ## 🔄 Updates & Maintenance
 
@@ -215,5 +216,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Continuous ML model improvements
 
 ---
-Built with ❤️ for Windows security
+Built for Windows security
 
