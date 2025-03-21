@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>MetaMask Integration</title>
+    <style>
+        .wallet-display {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="walletDisplay" class="wallet-display">
+        Connecting...
+    </div>
+
+    <script>
+        async function connectWallet() {
+            const walletDisplay = document.getElementById('walletDisplay');
+            
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ 
+                        method: 'eth_requestAccounts' 
+                    });
+                    const address = accounts[0];
+                    // Display shortened address
+                    walletDisplay.textContent = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+                    
+                    // Listen for account changes
+                    window.ethereum.on('accountsChanged', function (accounts) {
+                        const newAddress = accounts[0];
+                        walletDisplay.textContent = `${newAddress.substring(0, 6)}...${newAddress.substring(newAddress.length - 4)}`;
+                    });
+                } catch (error) {
+                    walletDisplay.textContent = 'Error connecting to MetaMask';
+                    console.error(error);
+                }
+            } else {
+                walletDisplay.textContent = 'Please install MetaMask';
+            }
+        }
+
+        // Connect when page loads
+        connectWallet();
+    </script>
+</body>
+</html> 

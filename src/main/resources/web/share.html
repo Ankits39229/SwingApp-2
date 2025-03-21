@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share Audit File via MetaMask</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 600px;
+        }
+        h1 {
+            color: #4a90e2;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .details {
+            margin: 20px 0;
+            background-color: #333;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .detail-label {
+            font-weight: bold;
+            width: 120px;
+            color: #aaa;
+        }
+        .detail-value {
+            word-break: break-all;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #3a7bc8;
+        }
+        button.cancel {
+            background-color: #555;
+        }
+        button.cancel:hover {
+            background-color: #666;
+        }
+        #status {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Share Audit File via MetaMask</h1>
+        
+        <div class="details" id="fileDetails">
+            <div class="detail-row">
+                <div class="detail-label">File Name:</div>
+                <div class="detail-value" id="fileName"></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">IPFS Hash:</div>
+                <div class="detail-value" id="ipfsHash"></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Recipient:</div>
+                <div class="detail-value" id="recipient"></div>
+            </div>
+        </div>
+        
+        <div id="authDetails" class="hidden">
+            <div class="detail-row">
+                <div class="detail-label">Authentication:</div>
+                <div class="detail-value">Please approve connection in MetaMask</div>
+            </div>
+        </div>
+        
+        <div id="metamaskStatus">
+            <div class="detail-row">
+                <div class="detail-label">Status:</div>
+                <div class="detail-value" id="connectionStatus">Not connected</div>
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <button id="connectBtn">Connect MetaMask</button>
+            <button id="shareBtn" disabled>Share File</button>
+            <button id="cancelBtn" class="cancel">Cancel</button>
+        </div>
+        
+        <div id="status"></div>
+    </div>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.0.umd.min.js"></script>
+    <script>
+        // Contract ABI - just the shareAuditFile function
+        const contractABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "recipient",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "ipfsHash",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "fileName",
+                        "type": "string"
+                    }
+                ],
+                "name": "shareAuditFile",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        // Parse query parameters
+        const params = new URLSearchParams(window.location.search);
+        const txId = params.get('txId');
+        const contractAddress = params.get('contract');
+        const recipientAddress = params.get('recipient');
+        const ipfsHash = params.get('ipfs');
+        const fileName = params.get('fileName');
+        const action = params.get('action');
+        const callbackUrl = params.get('callbackUrl');
+
+        // Check if this is an authentication request vs a file share request
+        const isAuthentication = action === 'authenticate';
+        
+        // Update UI based on request type
+        if (isAuthentication) {
+            document.getElementById('fileDetails').classList.add('hidden');
+            document.getElementById('authDetails').classList.remove('hidden');
+            document.getElementById('shareBtn').classList.add('hidden');
+            document.title = "MetaMask Authentication";
+            document.querySelector('h1').textContent = "MetaMask Authentication";
+        } else {
+            // Fill in the details for file sharing
+            document.getElementById('fileName').textContent = fileName || 'N/A';
+            document.getElementById('ipfsHash').textContent = ipfsHash || 'N/A';
+            document.getElementById('recipient').textContent = recipientAddress || 'N/A';
+        }
+
+        // Elements
+        const connectBtn = document.getElementById('connectBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const statusDiv = document.getElementById('status');
+        const metamaskStatusDiv = document.getElementById('metamaskStatus');
+        const connectionStatusDiv = document.getElementById('connectionStatus');
+
+        // Check if MetaMask is installed
+        async function checkMetaMask() {
+            if (window.ethereum) {
+                metamaskStatusDiv.classList.remove('hidden');
+                
+                // Auto-connect for authentication requests
+                if (isAuthentication) {
+                    connectMetaMask();
+                }
+                
+                return true;
+            } else {
+                statusDiv.innerHTML = 'MetaMask not detected! Please install MetaMask to continue.';
+                connectBtn.disabled = true;
+                
+                // Notify Java application if this is an authentication request
+                if (isAuthentication && callbackUrl) {
+                    fetch(`${callbackUrl}?txId=${txId}&status=failed&reason=metamask_not_installed`);
+                }
+                
+                return false;
+            }
+        }
+
+        // Connect to MetaMask
+        async function connectMetaMask() {
+            try {
+                connectBtn.innerHTML = '<div class="loading"></div>Connecting...';
+                connectBtn.disabled = true;
+                
+                // Request account access
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                
+                if (accounts.length === 0) {
+                    statusDiv.textContent = 'No accounts found. Please unlock MetaMask.';
+                    connectBtn.innerHTML = 'Connect MetaMask';
+                    connectBtn.disabled = false;
+                    
+                    // Notify Java application if this is an authentication request
+                    if (isAuthentication && callbackUrl) {
+                        notifyJavaApp(callbackUrl, txId, "failed", "no_accounts");
+                    }
+                    
+                    return false;
+                }
+                
+                connectionStatusDiv.textContent = 'Connected: ' + accounts[0].substring(0, 6) + '...' + accounts[0].substring(38);
+                connectBtn.innerHTML = 'Connected';
+                
+                // For authentication requests, we're done
+                if (isAuthentication) {
+                    statusDiv.textContent = 'Authentication successful!';
+                    
+                    // Notify Java application of successful authentication
+                    if (callbackUrl) {
+                        notifyJavaApp(callbackUrl, txId, "authenticated", accounts[0]);
+                    }
+                    
+                    setTimeout(() => {
+                        statusDiv.textContent = 'You may close this window and return to the application.';
+                    }, 2000);
+                } else {
+                    // For file sharing, enable the share button
+                    shareBtn.disabled = false;
+                }
+                
+                return true;
+            } catch (error) {
+                statusDiv.textContent = 'Error connecting to MetaMask: ' + error.message;
+                connectBtn.innerHTML = 'Connect MetaMask';
+                connectBtn.disabled = false;
+                
+                // Notify Java application if this is an authentication request
+                if (isAuthentication && callbackUrl) {
+                    notifyJavaApp(callbackUrl, txId, "failed", error.message);
+                }
+                
+                return false;
+            }
+        }
+
+        // Helper function to notify the Java application
+        function notifyJavaApp(url, txId, status, accountOrReason) {
+            console.log(`Notifying Java app: ${url} with txId=${txId}, status=${status}, value=${accountOrReason}`);
+            
+            // Ensure proper URL encoding of all parameters
+            const encodedTxId = encodeURIComponent(txId);
+            const encodedStatus = encodeURIComponent(status);
+            let additionalParam = '';
+            
+            if (status === "authenticated") {
+                const encodedAccount = encodeURIComponent(accountOrReason);
+                additionalParam = `&account=${encodedAccount}`;
+                console.log(`Authentication successful with account: ${accountOrReason}`);
+            } else if (status === "failed") {
+                const encodedReason = encodeURIComponent(accountOrReason);
+                additionalParam = `&reason=${encodedReason}`;
+            }
+            
+            // Build the full URL with all parameters properly encoded
+            const fullUrl = `${url}?txId=${encodedTxId}&status=${encodedStatus}${additionalParam}`;
+            console.log(`Sending notification to: ${fullUrl}`);
+            
+            // Use both methods to ensure delivery
+            // GET request with properly encoded URL
+            fetch(fullUrl)
+                .then(response => {
+                    console.log(`GET notification response: ${response.status}`);
+                })
+                .catch(error => {
+                    console.error(`GET notification error: ${error}`);
+                    // Fall back to POST if GET fails
+                    postNotification();
+                });
+            
+            // POST method fallback
+            function postNotification() {
+                const formData = new URLSearchParams();
+                formData.append("txId", txId);
+                formData.append("status", status);
+                
+                if (status === "authenticated") {
+                    formData.append("account", accountOrReason);
+                } else if (status === "failed") {
+                    formData.append("reason", accountOrReason);
+                }
+                
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData.toString()
+                })
+                .then(response => {
+                    console.log(`POST notification response: ${response.status}`);
+                })
+                .catch(error => {
+                    console.error(`POST notification error: ${error}`);
+                });
+            }
+        }
+
+        // Share the file
+        async function shareFile() {
+            try {
+                shareBtn.innerHTML = '<div class="loading"></div>Processing...';
+                shareBtn.disabled = true;
+                cancelBtn.disabled = true;
+                
+                // Create a provider
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const signer = provider.getSigner();
+                
+                // Create contract instance
+                const contract = new ethers.Contract(contractAddress, contractABI, signer);
+                
+                // Call the shareAuditFile function
+                statusDiv.textContent = 'Please confirm the transaction in MetaMask...';
+                const tx = await contract.shareAuditFile(recipientAddress, ipfsHash, fileName);
+                
+                statusDiv.textContent = 'Transaction submitted, waiting for confirmation...';
+                
+                // Wait for confirmation
+                const receipt = await tx.wait();
+                
+                // Notify the Java application
+                fetch(`/api/transaction-completed/${txId}/${tx.hash}`);
+                
+                statusDiv.textContent = 'Transaction confirmed! You can close this window.';
+                
+                // Close the window after 5 seconds
+                setTimeout(() => {
+                    window.close();
+                }, 5000);
+            } catch (error) {
+                statusDiv.textContent = 'Error: ' + error.message;
+                shareBtn.innerHTML = 'Share File';
+                shareBtn.disabled = false;
+                cancelBtn.disabled = false;
+                
+                // Notify the Java application of the error
+                fetch(`/api/transaction-failed/${txId}/${encodeURIComponent(error.message)}`);
+            }
+        }
+
+        // Event Listeners
+        connectBtn.addEventListener('click', connectMetaMask);
+        shareBtn.addEventListener('click', shareFile);
+        cancelBtn.addEventListener('click', () => window.close());
+
+        // Initialize
+        checkMetaMask();
+    </script>
+</body>
+</html> 

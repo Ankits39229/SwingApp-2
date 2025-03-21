@@ -30,7 +30,7 @@ public class Main extends JFrame {
     private static final Color HOVER_COLOR = new Color(25, 27, 32);           // More visible hover
     private static final Color CARD_BACKGROUND = new Color(5, 5, 7);          // Darker card background
     private static final Color BORDER_COLOR = new Color(35, 38, 45);          // More visible borders
-    
+
     // Menu icons colors with increased contrast
     private static final Color HOME_COLOR = new Color(70, 120, 255);         // Brighter blue
     private static final Color CLEAN_COLOR = new Color(50, 210, 110);        // More vibrant green
@@ -65,23 +65,23 @@ public class Main extends JFrame {
         try {
             // Use FlatDarkLaf instead of system look and feel
             FlatDarkLaf.setup();
-            
+
             // For custom colors that match your theme exactly
             UIManager.put("TitlePane.background", MENU_BACKGROUND);
             UIManager.put("TitlePane.foreground", TEXT_COLOR);
             UIManager.put("TitlePane.inactiveBackground", BACKGROUND_COLOR);
             UIManager.put("TitlePane.inactiveForeground", TEXT_COLOR.darker());
-            
+
             // Button colors in title bar
             UIManager.put("TitlePane.buttonHoverBackground", HOVER_COLOR);
             UIManager.put("TitlePane.buttonPressedBackground", ACCENT_COLOR);
-            
+
             // Apply additional UI defaults
             setupUIDefaults();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         setTitle("Windows Security Suite");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1300, 800);  // Larger default size
@@ -93,19 +93,19 @@ public class Main extends JFrame {
         cardLayout = new CardLayout();
         mainContentPanel = new JPanel(cardLayout);
         mainContentPanel.setBackground(BACKGROUND_COLOR);
-        
+
         // Create main UI components
         JPanel headerPanel = createHeaderPanel();
         JPanel sideMenuPanel = createSideMenu();
         JPanel contentWrapper = createContentWrapper(mainContentPanel);
-        
+
         // Create split pane for resizable menu
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sideMenuPanel, contentWrapper);
         splitPane.setDividerLocation(280);
         splitPane.setDividerSize(1);
         splitPane.setBorder(null);
         splitPane.setContinuousLayout(true);
-        
+
         // Add components to the frame
         add(headerPanel, BorderLayout.NORTH);
         add(splitPane, BorderLayout.CENTER);
@@ -127,7 +127,7 @@ public class Main extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         // Add resize listener for responsive design
         addComponentListener(new ComponentAdapter() {
             @Override
@@ -140,26 +140,26 @@ public class Main extends JFrame {
                 }
             }
         });
-        
+
         // Set initial selected menu item
         selectMenuItem("Home");
 
         // Add chat bubble
-        ChatBubble chatBubble = new ChatBubble();
-        JLayeredPane layeredPane = getLayeredPane();
-        layeredPane.add(chatBubble, JLayeredPane.POPUP_LAYER);
-        
-        // Position the chat bubble in the bottom-right corner
-        addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                int x = getWidth() - chatBubble.getPreferredSize().width - 20;
-                int y = getHeight() - chatBubble.getPreferredSize().height - 20;
-                chatBubble.setBounds(x, y, 
-                    chatBubble.getPreferredSize().width, 
-                    chatBubble.getPreferredSize().height);
-            }
-        });
+//        ChatBubble chatBubble = new ChatBubble();
+//        JLayeredPane layeredPane = getLayeredPane();
+//        layeredPane.add(chatBubble, JLayeredPane.POPUP_LAYER);
+//
+//        // Position the chat bubble in the bottom-right corner
+//        addComponentListener(new ComponentAdapter() {
+//            @Override
+//            public void componentResized(ComponentEvent e) {
+//                int x = getWidth() - chatBubble.getPreferredSize().width - 20;
+//                int y = getHeight() - chatBubble.getPreferredSize().height - 20;
+//                chatBubble.setBounds(x, y,
+//                        chatBubble.getPreferredSize().width,
+//                        chatBubble.getPreferredSize().height);
+//            }
+//        });
     }
 
     private JPanel createHeaderPanel() {
@@ -169,15 +169,15 @@ public class Main extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 // Enhanced gradient for header with more contrast
                 GradientPaint gradient = new GradientPaint(
-                    0, 0, new Color(25, 27, 32),
-                    0, getHeight(), new Color(12, 12, 15)
+                        0, 0, new Color(25, 27, 32),
+                        0, getHeight(), new Color(12, 12, 15)
                 );
                 g2d.setPaint(gradient);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
-                
+
                 // More visible bottom border
                 g2d.setColor(new Color(BORDER_COLOR.getRed(), BORDER_COLOR.getGreen(), BORDER_COLOR.getBlue(), 80));
                 g2d.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
@@ -185,11 +185,11 @@ public class Main extends JFrame {
         };
         headerPanel.setPreferredSize(new Dimension(getWidth(), 60));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-        
+
         // Create app title with logo
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         titlePanel.setOpaque(false);
-        
+
         // Logo icon
         JLabel logoLabel = new JLabel() {
             @Override
@@ -197,18 +197,18 @@ public class Main extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 // Draw shield logo
                 int width = getWidth();
                 int height = getHeight();
                 int padding = 3;
-                
+
                 // Shield background
                 g2d.setColor(ACCENT_COLOR);
                 int[] xPoints = {padding, width/2, width - padding, width - padding, width/2, padding};
                 int[] yPoints = {padding + height/4, padding, padding + height/4, height - padding, height - padding, height - padding};
                 g2d.fillPolygon(xPoints, yPoints, 6);
-                
+
                 // Inner details
                 g2d.setColor(new Color(255, 255, 255, 100));
                 g2d.fillRect(width/2 - 3, height/2 - 2, 6, 10);
@@ -216,43 +216,43 @@ public class Main extends JFrame {
             }
         };
         logoLabel.setPreferredSize(new Dimension(30, 30));
-        
+
         // App title
         JLabel titleLabel = new JLabel("Windows Security Suite");
         titleLabel.setForeground(TEXT_COLOR);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        
+
         titlePanel.add(logoLabel);
         titlePanel.add(titleLabel);
-        
+
         // Create right-side controls
         JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         controlsPanel.setOpaque(false);
-        
+
         // Search box with animation
         JTextField searchField = new JTextField(15);
         searchField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BORDER_COLOR, 1, true),
-            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+                BorderFactory.createLineBorder(BORDER_COLOR, 1, true),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
         searchField.setBackground(new Color(45, 47, 50));
         searchField.setForeground(TEXT_COLOR);
         searchField.setCaretColor(TEXT_COLOR);
         searchField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        
+
         // Profile button
         JButton profileButton = createIconButton("Profile", new Color(100, 110, 240));
-        
+
         // Settings button
         JButton settingsButton = createIconButton("Settings", new Color(240, 180, 70));
-        
+
         controlsPanel.add(searchField);
         controlsPanel.add(profileButton);
         controlsPanel.add(settingsButton);
-        
+
         headerPanel.add(titlePanel, BorderLayout.WEST);
         headerPanel.add(controlsPanel, BorderLayout.EAST);
-        
+
         return headerPanel;
     }
 
@@ -262,19 +262,19 @@ public class Main extends JFrame {
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 // Only paint background if mouse is over
                 if (getModel().isRollover()) {
                     g2d.setColor(new Color(50, 53, 58));
                     g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
                 }
-                
+
                 // Draw icon
                 g2d.setColor(iconColor);
                 int size = Math.min(getWidth(), getHeight()) - 16;
                 int x = (getWidth() - size) / 2;
                 int y = (getHeight() - size) / 2;
-                
+
                 if (tooltip.equals("Settings")) {
                     // Draw gear icon
                     g2d.setStroke(new BasicStroke(2));
@@ -298,7 +298,7 @@ public class Main extends JFrame {
         button.setContentAreaFilled(false);
         button.setToolTipText(tooltip);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
+
         return button;
     }
 
@@ -306,22 +306,22 @@ public class Main extends JFrame {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(BACKGROUND_COLOR);
         wrapper.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        
+
         // Add content with shadow effect
         JPanel shadowPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 // Create background with rounded corners
                 g2d.setColor(CARD_BACKGROUND);
                 g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 15, 15));
-                
+
                 // Draw subtle border
                 g2d.setColor(BORDER_COLOR);
                 g2d.draw(new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, 15, 15));
-                
+
                 // Create shadow effect
                 int shadowSize = 5;
                 for (int i = 0; i < shadowSize; i++) {
@@ -334,7 +334,7 @@ public class Main extends JFrame {
         shadowPanel.setLayout(new BorderLayout());
         shadowPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         shadowPanel.add(content, BorderLayout.CENTER);
-        
+
         wrapper.add(shadowPanel, BorderLayout.CENTER);
         return wrapper;
     }
@@ -346,19 +346,19 @@ public class Main extends JFrame {
         UIManager.put("Button.font", new Font("Segoe UI Semibold", Font.PLAIN, 13));
         UIManager.put("Button.focus", new Color(0, 0, 0, 0));
         UIManager.put("Button.select", ACCENT_COLOR.brighter());
-        
+
         // Higher contrast text field
         UIManager.put("TextField.background", new Color(15, 15, 18));
         UIManager.put("TextField.foreground", TEXT_COLOR);
         UIManager.put("TextField.caretForeground", TEXT_COLOR);
-        
+
         // Enhanced scrollbar contrast
         UIManager.put("ScrollBar.thumb", new Color(50, 53, 60));
         UIManager.put("ScrollBar.track", new Color(12, 12, 15));
         UIManager.put("ScrollBar.thumbDarkShadow", BACKGROUND_COLOR);
         UIManager.put("ScrollBar.thumbHighlight", HOVER_COLOR.brighter());
         UIManager.put("ScrollBar.thumbShadow", MENU_BACKGROUND);
-        
+
         // Additional UI improvements
         UIManager.put("Panel.background", BACKGROUND_COLOR);
         UIManager.put("Panel.foreground", TEXT_COLOR);
@@ -369,58 +369,58 @@ public class Main extends JFrame {
     private JPanel createSideMenu() {
         // Create the sidebar menu with your desired width
         SidebarMenu sideMenu = new SidebarMenu(280);
-        
+
         // Set colors to match your application theme
         sideMenu.setMenuBackgroundColor(MENU_BACKGROUND);
         sideMenu.setSelectedColor(MENU_SELECTED);
         sideMenu.setHoverColor(HOVER_COLOR);
         sideMenu.setTextColor(TEXT_COLOR);
-        
+
         // Add categories and menu items
         sideMenu.addCategory("MAIN");
         sideMenu.addMenuItem("Home", "Home", HOME_COLOR);
-        
+
         sideMenu.addCategory("SECURITY");
         sideMenu.addMenuItem("Clean", "Clean", CLEAN_COLOR);
         sideMenu.addMenuItem("Troubleshoot", "Troubleshoot", TROUBLESHOOT_COLOR);
         sideMenu.addMenuItem("Firewall", "Firewall", FIREWALL_COLOR);
-        
+
         sideMenu.addCategory("ADVANCED");
         sideMenu.addMenuItem("Audit", "Audit", AUDIT_COLOR);
         sideMenu.addMenuItem("Remediate", "Remediate", REMEDIATE_COLOR);
         sideMenu.addMenuItem("Malware", "Malware", MALWARE_COLOR);
         sideMenu.addMenuItem("Assistant", "Assistant", ASSISTANT_COLOR);
-        
+
         // Add flexible space to push the status panel to the bottom
         sideMenu.addFlexibleSpace();
-        
+
         // Add a status panel at the bottom
         sideMenu.addComponent(createStatusPanel());
-        
+
         // Set up the selection change handler
         sideMenu.setOnSelectionChanged(cardName -> {
             // Show the corresponding card
             cardLayout.show(mainContentPanel, cardName);
             currentCard = cardName;
         });
-        
+
         // Set initial selection
         sideMenu.selectMenuItem("Home");
-        
+
         return sideMenu;
     }
-    
+
     private JPanel createStatusPanel() {
         JPanel statusPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 // Higher contrast status panel background
                 g2d.setColor(new Color(18, 20, 24));
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                
+
                 // More visible border
                 g2d.setColor(new Color(50, 53, 60));
                 g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
@@ -430,28 +430,28 @@ public class Main extends JFrame {
         statusPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
         statusPanel.setMaximumSize(new Dimension(280, 80));
         statusPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
+
         // System status indicator
         JPanel statusInfo = new JPanel();
         statusInfo.setLayout(new BoxLayout(statusInfo, BoxLayout.Y_AXIS));
         statusInfo.setOpaque(false);
-        
+
         JLabel statusTitle = new JLabel("System Status");
         statusTitle.setForeground(TEXT_COLOR);
         statusTitle.setFont(new Font("Segoe UI", Font.BOLD, 13));
         statusTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
+
         JPanel statusIndicator = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         statusIndicator.setOpaque(false);
         statusIndicator.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
+
         // Status icon
         JPanel statusIcon = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 // Draw pulsing green status indicator
                 g2d.setColor(new Color(80, 200, 120));
                 int pulse = (int)(6 + 2 * Math.sin(System.currentTimeMillis() / 500.0));
@@ -460,14 +460,14 @@ public class Main extends JFrame {
         };
         statusIcon.setOpaque(false);
         statusIcon.setPreferredSize(new Dimension(12, 12));
-        
+
         JLabel statusText = new JLabel("Protected");
         statusText.setForeground(new Color(80, 200, 120));
         statusText.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        
+
         statusIndicator.add(statusIcon);
         statusIndicator.add(statusText);
-        
+
         // Create animated status bar
         JProgressBar statusBar = new JProgressBar(0, 100);
         statusBar.setValue(100);
@@ -478,28 +478,28 @@ public class Main extends JFrame {
         statusBar.setPreferredSize(new Dimension(200, 4));
         statusBar.setMaximumSize(new Dimension(200, 4));
         statusBar.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
+
         statusInfo.add(statusTitle);
         statusInfo.add(Box.createRigidArea(new Dimension(0, 5)));
         statusInfo.add(statusIndicator);
         statusInfo.add(Box.createRigidArea(new Dimension(0, 8)));
         statusInfo.add(statusBar);
-        
+
         // Add status timer to simulate activity
         new Timer(2000, e -> {
             int newValue = 85 + (int)(Math.random() * 15);
             statusBar.setValue(newValue);
         }).start();
-        
+
         statusPanel.add(statusInfo, BorderLayout.CENTER);
-        
+
         return statusPanel;
     }
 
     private void selectMenuItem(String cardName) {
         // Reset background of all menu items
         menuItems.forEach((key, item) -> item.setBackground(MENU_BACKGROUND));
-        
+
         // Set selected item background
         JPanel selectedItem = menuItems.get(cardName);
         if (selectedItem != null) {
@@ -532,60 +532,98 @@ public class Main extends JFrame {
 
             @Override
             protected void done() {
-                loadingScreen.dispose(); // Close loading screen
-                
-                SwingUtilities.invokeLater(() -> {
-                    Main dashboard = new Main();
-                    
-                    // Create a custom glass pane class
-                    class FadeGlassPane extends JPanel {
-                        private float alpha = 1.0f;
+                // Create MetaMask authentication window
+                MetaMaskAuth authWindow = new MetaMaskAuth();
+                authWindow.setAuthenticationListener(new MetaMaskAuth.AuthenticationListener() {
+                    @Override
+                    public void onAuthenticationSuccess() {
+                        // Update loading screen with success message
+                        loadingScreen.updateProgress(100, "Authentication successful! Starting application...");
                         
-                        @Override
-                        protected void paintComponent(Graphics g) {
-                            super.paintComponent(g);
-                            Graphics2D g2d = (Graphics2D) g.create();
-                            g2d.setColor(BACKGROUND_COLOR);
-                            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-                            g2d.fillRect(0, 0, getWidth(), getHeight());
-                            g2d.dispose();
-                        }
-                        
-                        public void setAlpha(float value) {
-                            this.alpha = value;
-                            repaint();
-                        }
-                        
-                        public float getAlpha() {
-                            return alpha;
-                        }
+                        // Small delay to show success message
+                        Timer delayTimer = new Timer(1000, e -> {
+                            loadingScreen.dispose(); // Close loading screen
+                            
+                            // Launch main application
+                            SwingUtilities.invokeLater(() -> {
+                                showMainApplication();
+                            });
+                        });
+                        delayTimer.setRepeats(false);
+                        delayTimer.start();
                     }
                     
-                    // Create and set up the glass pane
-                    FadeGlassPane glassPane = new FadeGlassPane();
-                    glassPane.setOpaque(false);
-                    dashboard.setGlassPane(glassPane);
-                    glassPane.setVisible(true);
-                    
-                    // Make the window visible
-                    dashboard.setVisible(true);
-                    
-                    // Create fade-in animation using the glass pane
-                    Timer fadeInTimer = new Timer(20, null);
-                    fadeInTimer.addActionListener(e -> {
-                        float newAlpha = glassPane.getAlpha() - 0.05f;
-                        if (newAlpha <= 0.0f) {
-                            newAlpha = 0.0f;
-                            fadeInTimer.stop();
-                            glassPane.setVisible(false);
-                        }
-                        glassPane.setAlpha(newAlpha);
-                    });
-                    fadeInTimer.start();
+                    @Override
+                    public void onAuthenticationFailure(String reason) {
+                        // Update loading screen with failure message
+                        loadingScreen.updateProgress(100, "Authentication failed: " + reason);
+                        
+                        // Small delay to show error before exiting
+                        Timer delayTimer = new Timer(2000, e -> {
+                            loadingScreen.dispose();
+                            System.exit(1);
+                        });
+                        delayTimer.setRepeats(false);
+                        delayTimer.start();
+                    }
                 });
+                
+                // Show authentication window
+                loadingScreen.updateProgress(100, "Waiting for MetaMask authentication...");
+                authWindow.setVisible(true);
             }
         };
 
         worker.execute();
+    }
+    
+    private static void showMainApplication() {
+        Main dashboard = new Main();
+
+        // Create a custom glass pane class
+        class FadeGlassPane extends JPanel {
+            private float alpha = 1.0f;
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setColor(BACKGROUND_COLOR);
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                g2d.dispose();
+            }
+
+            public void setAlpha(float value) {
+                this.alpha = value;
+                repaint();
+            }
+
+            public float getAlpha() {
+                return alpha;
+            }
+        }
+
+        // Create and set up the glass pane
+        FadeGlassPane glassPane = new FadeGlassPane();
+        glassPane.setOpaque(false);
+        dashboard.setGlassPane(glassPane);
+        glassPane.setVisible(true);
+
+        // Make the window visible
+        dashboard.setVisible(true);
+
+        // Create fade-in animation using the glass pane
+        Timer fadeInTimer = new Timer(20, null);
+        fadeInTimer.addActionListener(e -> {
+            float newAlpha = glassPane.getAlpha() - 0.05f;
+            if (newAlpha <= 0.0f) {
+                newAlpha = 0.0f;
+                fadeInTimer.stop();
+                glassPane.setVisible(false);
+            }
+            glassPane.setAlpha(newAlpha);
+        });
+        fadeInTimer.start();
     }
 }

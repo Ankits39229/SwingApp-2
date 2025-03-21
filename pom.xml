@@ -14,19 +14,22 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>23</maven.compiler.source>
+        <maven.compiler.target>23</maven.compiler.target>
         <junit.version>5.10.1</junit.version>
         <log4j.version>2.22.1</log4j.version>
         <exec-maven-plugin.version>3.1.1</exec-maven-plugin.version>
         <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <maven-surefire-plugin.version>3.2.3</maven-surefire-plugin.version>
+        <socketio.version>2.1.0</socketio.version>
     </properties>
 
-
-
-
-
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- Logging -->
@@ -39,11 +42,6 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.oshi</groupId>
-            <artifactId>oshi-core</artifactId>
-            <version>6.4.0</version>
         </dependency>
         <dependency>
             <groupId>com.formdev</groupId>
@@ -64,8 +62,20 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
+        </dependency> 
+
+        <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>core</artifactId>
+            <version>4.9.7</version>
         </dependency>
 
+        <!-- Socket.IO Client for IPChatSwing -->
+        <dependency>
+            <groupId>io.socket</groupId>
+            <artifactId>socket.io-client</artifactId>
+            <version>${socketio.version}</version>
+        </dependency>
 
         <!-- Testing -->
         <dependency>
@@ -106,6 +116,27 @@
             <artifactId>xmlgraphics-commons</artifactId>
             <version>2.8</version>
         </dependency>
+
+        <!-- IPFS Client -->
+        <dependency>
+            <groupId>com.github.ipfs</groupId>
+            <artifactId>java-ipfs-http-client</artifactId>
+            <version>1.4.4</version>
+        </dependency>
+
+        <!-- For HTTP requests to Pinata -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.9.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-all</artifactId>
+            <version>1.16</version>
+        </dependency>
+
     </dependencies>
 
     <build>

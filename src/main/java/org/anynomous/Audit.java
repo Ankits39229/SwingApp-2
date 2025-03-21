@@ -3,7 +3,6 @@ package main.java.org.anynomous;
 import javax.swing.*;
 import javax.swing.Timer;
 import javax.swing.border.*;
-import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -12,7 +11,8 @@ import java.util.List;
 import javax.swing.SwingWorker;
 import java.awt.geom.*;
 import java.awt.LinearGradientPaint;
-
+import java.awt.datatransfer.StringSelection;
+import java.awt.Toolkit;
 
 public class Audit extends JPanel {
 
@@ -25,16 +25,9 @@ public class Audit extends JPanel {
     private static final Color TEXT_SECONDARY = new Color(179, 179, 179);
     private static final Color BORDER_COLOR = new Color(55, 65, 81);
 
-    private static final Font HEADER_FONT = new Font("SF Pro Display", Font.BOLD, 32);
-    private static final Font SUBTITLE_FONT = new Font("Inter", Font.BOLD, 18);
     private static final Font BUTTON_FONT = new Font("SF Pro Text", Font.BOLD, 14);
     private static final Font LOG_FONT = new Font("SF Mono", Font.PLAIN, 13);
 
-    private static final int BUTTON_HEIGHT = 44;
-    private static final int BUTTON_WIDTH = 220;
-    private static final int PANEL_PADDING = 32;
-    private static final int COMPONENT_SPACING = 24;
-    private static final int CORNER_RADIUS = 12;
 
     private JPanel loadingPanel;
     private Timer animationTimer;
@@ -58,11 +51,7 @@ public class Audit extends JPanel {
     private float buttonHoverAlpha = 0.0f;
     private Timer loadingTimer;
 
-    // Add new colors for gradients and effects
-//    private static final Color GRADIENT_START = new Color(0, 122, 255, 255);
-//    private static final Color GRADIENT_END = new Color(64, 169, 255, 255);
-//    private static final Color GLOW_COLOR = new Color(0, 122, 255, 30);
-    
+
     // Add new animation-related fields
     private float pulseScale = 1.0f;
     private Timer pulseTimer;
@@ -90,6 +79,15 @@ public class Audit extends JPanel {
     private float rippleScale = 0;
     private boolean showRipple = false;
     private List<StarParticle> stars = new ArrayList<>();
+
+    // Add these new fields at the top of the class with other private fields
+    private JButton viewAuditButton;
+    private File currentAuditFile;
+    private JButton shareAuditButton;
+//    private PinataService pinataService;
+//    private BlockchainService blockchainService;
+
+//    private static final Logger logger = LogManager.getLogger(PinataService.class);
 
     public float getPulseScale() {
         return pulseScale;
@@ -180,6 +178,7 @@ public class Audit extends JPanel {
         setupAnimations();
         createLayout();
         initializeParticles();
+        
     }
 
     private void setupMainPanel() {
@@ -296,12 +295,23 @@ public class Audit extends JPanel {
         // Create log panel with modern styling
         JPanel logPanel = createModernLogPanel();
 
+        // Create the view audit button (initially invisible)
+        viewAuditButton = createModernButton("View Audit", e -> openAuditFile());
+        viewAuditButton.setVisible(false);  // Hide initially
+        
+        // Create share button
+        shareAuditButton = createModernButton("Share Audit", e -> shareAudit());
+        shareAuditButton.setVisible(false);  // Hide initially
+        
         mainContent.add(Box.createVerticalStrut(20));
         mainContent.add(loadingPanel);
         mainContent.add(Box.createVerticalStrut(30));
         mainContent.add(buttonPanel);
         mainContent.add(Box.createVerticalStrut(30));
         mainContent.add(logPanel);
+        mainContent.add(Box.createVerticalStrut(30));
+        mainContent.add(viewAuditButton);
+        mainContent.add(shareAuditButton);
 
         add(mainContent, BorderLayout.CENTER);
     }
@@ -465,10 +475,7 @@ public class Audit extends JPanel {
                 }
             }
 
-            @Override
-            protected void done() {
-                stopLoading();
-            }
+
         };
         worker.execute();
     }
@@ -506,5 +513,150 @@ public class Audit extends JPanel {
 
     private String getCurrentTimestamp() {
         return new java.text.SimpleDateFormat("HH:mm:ss").format(new Date());
+    }
+
+
+
+    // Add this method to open the audit file
+    private void openAuditFile() {
+        if (currentAuditFile != null && currentAuditFile.exists()) {
+            try {
+                Desktop.getDesktop().open(currentAuditFile);
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this,
+                    "Error opening audit file: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    // Add method to share audit
+    private void shareAudit() {
+        if (currentAuditFile == null || !currentAuditFile.exists()) {
+            showErrorDialog("No audit file available to share");
+            return;
+        }
+        
+        // Add file size check
+        if (currentAuditFile.length() > 100 * 1024 * 1024) {
+            showErrorDialog("File size exceeds 100MB limit");
+            return;
+        }
+        
+        // Show progress dialog with cancel option
+        ProgressDialog progressDialog = createProgressDialog();
+        progressDialog.setVisible(true);
+        
+
+    }
+
+    // Helper methods for UI feedback
+    private JDialog createLoadingDialog(String message) {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), true);
+        dialog.setUndecorated(true);
+        
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setBackground(PRIMARY_DARK);
+        
+        JLabel label = new JLabel(message);
+        label.setForeground(TEXT_PRIMARY);
+        panel.add(label, BorderLayout.CENTER);
+        
+        dialog.add(panel);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        
+        return dialog;
+    }
+
+    private void showShareSuccessDialog(String ipfsHash, String gatewayUrl) {
+        String message = String.format("""
+            Audit shared successfully!
+            
+            IPFS Hash: %s
+            
+            You can view your audit at:
+            %s
+            
+            The audit has been uploaded to IPFS via Pinata and recorded on the Sepolia testnet.
+            Anyone with this URL can access the audit report.
+            """, ipfsHash, gatewayUrl);
+        
+        JTextArea textArea = new JTextArea(message);
+        textArea.setEditable(false);
+        textArea.setBackground(null);
+        textArea.setFont(new Font("Dialog", Font.PLAIN, 12));
+        
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(400, 200));
+        
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(scrollPane, BorderLayout.CENTER);
+        addCopyUrlButton(gatewayUrl, panel);
+        
+        JOptionPane.showMessageDialog(
+            this,
+            panel,
+            "Share Success",
+            JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    private void addCopyUrlButton(String gatewayUrl, JPanel panel) {
+        JButton copyButton = new JButton("Copy URL");
+        copyButton.addActionListener(e -> {
+            StringSelection selection = new StringSelection(gatewayUrl);
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+            JOptionPane.showMessageDialog(
+                this,
+                "URL copied to clipboard!",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        });
+        panel.add(copyButton);
+    }
+
+    private void showErrorDialog(String message) {
+        JOptionPane.showMessageDialog(
+            this,
+            message,
+            "Error",
+            JOptionPane.ERROR_MESSAGE
+        );
+    }
+
+
+
+    private boolean isValidFileType(File file) {
+        String name = file.getName().toLowerCase();
+        return name.endsWith(".txt") || name.endsWith(".pdf") || name.endsWith(".json");
+    }
+
+    private static class ProgressDialog extends JDialog {
+        private final JProgressBar progressBar;
+        
+        public ProgressDialog(Frame owner) {
+            super(owner, "Sharing Audit", true);
+            setLayout(new BorderLayout(10, 10));
+            
+            progressBar = new JProgressBar(0, 100);
+            progressBar.setStringPainted(true);
+            add(progressBar, BorderLayout.CENTER);
+            
+            setSize(300, 80);
+            setLocationRelativeTo(owner);
+            setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        }
+        
+        public void setProgress(int value) {
+            progressBar.setValue(value);
+        }
+    }
+
+    private ProgressDialog createProgressDialog() {
+        return new ProgressDialog((Frame) SwingUtilities.getWindowAncestor(this));
     }
 }

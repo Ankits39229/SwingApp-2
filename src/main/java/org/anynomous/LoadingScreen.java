@@ -2,6 +2,9 @@ package main.java.org.anynomous;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.font.TextLayout;
 import java.awt.geom.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,452 +12,493 @@ import java.util.Random;
 //import com.sun.awt.AWTUtilities;
 
 public class LoadingScreen extends JWindow {
-    private final JProgressBar progressBar;
     private final JLabel statusLabel;
     private double rotationAngle = 0;
     private final Timer animationTimer;
-    private final List<Particle> particles = new ArrayList<>();
+    private final List<JoyParticle> particles = new ArrayList<>();
     private final Random random = new Random();
 
-    // Enhanced color scheme
-    private static final Color ACCENT_COLOR = new Color(32, 34, 37); // Dark accent color
-    private static final Color GREEN_COLOR = new Color(0, 255, 0); // Bright green
-    private static final Color DARK_GREEN = new Color(0, 180, 0); // Darker green for contrast
-    private static final Color LIGHT_GREEN = new Color(144, 238, 144); // Light green
-    private static final Color BG_COLOR = new Color(25, 27, 29); // Dark background
+    // Brighter professional green theme color palette
+    private static final Color PRIMARY_COLOR = new Color(0, 170, 70); // Brighter professional green
+    private static final Color SECONDARY_COLOR = new Color(0, 140, 60); // Medium green
+    private static final Color ACCENT_COLOR1 = new Color(120, 220, 120); // Light bright green
+    private static final Color ACCENT_COLOR2 = new Color(60, 200, 100); // Bright medium green
+    private static final Color ACCENT_COLOR3 = new Color(180, 255, 180); // Very light green
+    private static final Color TEXT_COLOR = new Color(255, 255, 255); // Pure white for text
+    private static final Color LOGO_GLOW = new Color(160, 255, 160, 120); // Brighter glow color
 
-    // Pulse animation variables
+    // Animation properties
+    private double bounceHeight = 0;
+    private double bounceDelta = 0.3;
     private double pulseScale = 1.0;
-    private double pulseDelta = 0.01;
+    private double pulseDelta = 0.005;
     private double glowIntensity = 0;
-    private double glowDelta = 0.02;
 
-    // Particle class for background effects
-    private class Particle {
+    // Array of brighter green shades for particles
+    private final Color[] GREEN_COLORS = {
+        PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR1, ACCENT_COLOR2, ACCENT_COLOR3,
+        new Color(50, 220, 100),  // Bright green
+        new Color(100, 240, 130)  // Brighter green
+    };
+
+    // Professional particle class with brighter effects
+    private class JoyParticle {
         float x, y;
-        float speed;
+        float xSpeed, ySpeed;
+        float rotation;
+        float rotationSpeed;
         float size;
-        float alpha;
-        float alphaChange;
+        Color color;
+        Shape shape;
+        float alpha = 0.6f; // Slightly higher alpha for brightness
 
-        public Particle() {
+        public JoyParticle() {
             reset();
         }
 
         public void reset() {
             x = random.nextFloat() * getWidth();
-            y = random.nextFloat() * getHeight();
-            speed = 0.2f + random.nextFloat() * 0.8f;
-            size = 1f + random.nextFloat() * 3f;
-            alpha = 0.1f + random.nextFloat() * 0.3f;
-            alphaChange = 0.001f + random.nextFloat() * 0.005f;
+            y = getHeight() + random.nextFloat() * 50;
+            
+            xSpeed = -0.8f + random.nextFloat() * 1.6f; 
+            ySpeed = -0.6f - random.nextFloat() * 1.0f;
+            
+            size = 3 + random.nextFloat() * 7;
+            
+            rotation = random.nextFloat() * 360;
+            rotationSpeed = -1f + random.nextFloat() * 2f;
+            
+            // Brighter colors with higher alpha
+            color = new Color(
+                GREEN_COLORS[random.nextInt(GREEN_COLORS.length)].getRed(),
+                GREEN_COLORS[random.nextInt(GREEN_COLORS.length)].getGreen(),
+                GREEN_COLORS[random.nextInt(GREEN_COLORS.length)].getBlue(),
+                40 + random.nextInt(60) // More visible
+            );
+            
+            int shapeType = random.nextInt(3);
+            switch (shapeType) {
+                case 0: // Circle
+                    shape = new Ellipse2D.Float(-size/2, -size/2, size, size);
+                    break;
+                case 1: // Square
+                    shape = new Rectangle2D.Float(-size/2, -size/2, size, size);
+                    break;
+                case 2: // Diamond
+                    shape = createDiamond(size);
+                    break;
+            }
+            
+            alpha = 0.4f + random.nextFloat() * 0.3f; // Higher alpha for brightness
+        }
+        
+        private Shape createDiamond(float size) {
+            Path2D path = new Path2D.Float();
+            path.moveTo(0, -size/2);
+            path.lineTo(size/2, 0);
+            path.lineTo(0, size/2);
+            path.lineTo(-size/2, 0);
+            path.closePath();
+            return path;
         }
 
         public void update() {
-            y -= speed;
-            alpha -= alphaChange;
+            x += xSpeed;
+            y += ySpeed;
+            rotation += rotationSpeed;
+            
+            xSpeed += -0.03f + random.nextFloat() * 0.06f;
+            xSpeed = Math.max(-1.2f, Math.min(1.2f, xSpeed));
+            
+            alpha -= 0.003f;
 
-            if (y < 0 || alpha <= 0) {
+            if (y < -size || alpha <= 0) {
                 reset();
-                y = getHeight();
             }
         }
 
         public void draw(Graphics2D g2d) {
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-            g2d.setColor(GREEN_COLOR);
-            g2d.fill(new Ellipse2D.Float(x, y, size, size));
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+            
+            AffineTransform old = g2d.getTransform();
+            g2d.translate(x, y);
+            g2d.rotate(Math.toRadians(rotation));
+            
+            g2d.setColor(color);
+            g2d.fill(shape);
+            
+            // Add a subtle bright highlight for more luminosity
+            g2d.setColor(new Color(255, 255, 255, 100));
+            if (shape instanceof Ellipse2D.Float) {
+                g2d.fillOval((int)(-size/4), (int)(-size/4), (int)(size/2), (int)(size/2));
+            }
+            
+            g2d.setTransform(old);
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
         }
     }
 
     public LoadingScreen() {
-        setSize(400, 300);
+        setSize(600, 400);
         setLocationRelativeTo(null);
-        setBackground(new Color(0, 0, 0, 0));
+        setBackground(new Color(0, 0, 0, 0)); // Fully transparent window background
 
-        // Enable window transparency
-        if (getGraphicsConfiguration().getDevice().isWindowTranslucencySupported(GraphicsDevice.WindowTranslucency.TRANSLUCENT)) {
-            setOpacity(1.0f);
+        // Initialize authentication server early to ensure it's ready
+        try {
+            AuthenticationEndpoint.getInstance();
+        } catch (Exception e) {
+            System.err.println("Warning: Could not initialize authentication server: " + e.getMessage());
         }
 
-        JPanel panel = new JPanel() {
+        // Create main panel with custom painting - completely transparent
+        JPanel mainPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
-                // Don't call super.paintComponent to keep panel transparent
-                Graphics2D g2d = (Graphics2D) g.create();
+                Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.dispose();
-            }
-        };
-        panel.setOpaque(false);
-        panel.setLayout(new BorderLayout());
-
-        // Initialize particles
-        for (int i = 0; i < 50; i++) {
-            particles.add(new Particle());
-        }
-
-        // Create animated logo panel
-        JPanel logoPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                // Don't call super.paintComponent to keep panel transparent
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
-                // Calculate center position
-                int centerX = getWidth() / 2;
-                int centerY = getHeight() / 2;
-
-                // Draw glow effect
-                if (glowIntensity > 0) {
-                    RadialGradientPaint glow = new RadialGradientPaint(
-                            new Point2D.Float(centerX, centerY),
-                            100f,
-                            new float[] {0.0f, 1.0f},
-                            new Color[] {
-                                    new Color(0, 255, 0, (int)(50 * glowIntensity)),
-                                    new Color(0, 255, 0, 0)
-                            }
-                    );
-                    g2d.setPaint(glow);
-                    g2d.fillOval(centerX - 100, centerY - 100, 200, 200);
-                }
-
-                // Draw rotating circles with pulse effect
-                g2d.setStroke(new BasicStroke(2));
-
-                // Outer rotating ring
-                g2d.setColor(DARK_GREEN);
-                g2d.rotate(rotationAngle, centerX, centerY);
-                double outerRadius = 55 * pulseScale;
-                for (int i = 0; i < 12; i++) {
-                    double angle = (Math.PI * 2 * i) / 12;
-                    int x = (int) (centerX + outerRadius * Math.cos(angle));
-                    int y = (int) (centerY + outerRadius * Math.sin(angle));
-                    int dotSize = (i % 3 == 0) ? 8 : 5; // Varying sizes
-                    g2d.fillOval(x - dotSize/2, y - dotSize/2, dotSize, dotSize);
-                }
-                g2d.rotate(-rotationAngle, centerX, centerY);
-
-                // Middle rotating ring
-                g2d.setColor(GREEN_COLOR);
-                g2d.rotate(-rotationAngle * 0.7, centerX, centerY);
-                double middleRadius = 40 * pulseScale;
-                for (int i = 0; i < 8; i++) {
-                    double angle = (Math.PI * 2 * i) / 8;
-                    int x = (int) (centerX + middleRadius * Math.cos(angle));
-                    int y = (int) (centerY + middleRadius * Math.sin(angle));
-                    g2d.fillOval(x - 4, y - 4, 7, 7);
-                }
-                g2d.rotate(rotationAngle * 0.7, centerX, centerY);
-
-                // Inner rotating ring
-                g2d.setColor(LIGHT_GREEN);
-                g2d.rotate(rotationAngle * 1.3, centerX, centerY);
-                double innerRadius = 25 * pulseScale;
-                for (int i = 0; i < 6; i++) {
-                    double angle = (Math.PI * 2 * i) / 6;
-                    int x = (int) (centerX + innerRadius * Math.cos(angle));
-                    int y = (int) (centerY + innerRadius * Math.sin(angle));
-                    g2d.fillOval(x - 3, y - 3, 5, 5);
-                }
-                g2d.rotate(-rotationAngle * 1.3, centerX, centerY);
-
-                // Draw connecting lines
-                g2d.setStroke(new BasicStroke(1.5f));
-                g2d.setColor(new Color(0, 255, 0, 40));
-                for (int i = 0; i < 6; i++) {
-                    double angle = (Math.PI * 2 * i) / 6;
-                    int x1 = (int) (centerX + (innerRadius-5) * Math.cos(angle));
-                    int y1 = (int) (centerY + (innerRadius-5) * Math.sin(angle));
-                    int x2 = (int) (centerX + (outerRadius+5) * Math.cos(angle));
-                    int y2 = (int) (centerY + (outerRadius+5) * Math.sin(angle));
-                    g2d.drawLine(x1, y1, x2, y2);
-                }
-
-                // Draw C2 text with glow effect
-                drawTextWithGlow(g2d, "C2", centerX, centerY, new Font("Arial", Font.BOLD, 48));
-
-                g2d.dispose();
-            }
-
-            private void drawTextWithGlow(Graphics2D g2d, String text, int x, int y, Font font) {
-                g2d.setFont(font);
-                FontMetrics fm = g2d.getFontMetrics();
-                int textWidth = fm.stringWidth(text);
-                int textHeight = fm.getHeight();
-
-                // Draw glow
-                float glowSize = 3f;
-                for (float i = glowSize; i > 0; i -= 0.5f) {
-                    float alpha = 0.1f * (glowSize - i + 1) * (float)glowIntensity;
-                    g2d.setColor(new Color(0f, 1f, 0f, alpha));
-                    g2d.setFont(font.deriveFont(font.getSize() + i));
-                    FontMetrics metrics = g2d.getFontMetrics();
-                    int width = metrics.stringWidth(text);
-                    g2d.drawString(text,
-                            x - width/2,
-                            y + textHeight/4);
-                }
-
-                // Draw text shadow
-                g2d.setFont(font);
-                g2d.setColor(new Color(0, 50, 0, 100));
-                g2d.drawString(text,
-                        x - textWidth/2 + 2,
-                        y + textHeight/4 + 2);
-
-                // Draw text
-                g2d.setColor(new Color(190, 255, 190));
-                g2d.drawString(text,
-                        x - textWidth/2,
-                        y + textHeight/4);
-
-                // Draw highlight
-                g2d.setColor(new Color(255, 255, 255, 70));
-                g2d.setFont(font.deriveFont(font.getSize() - 1f));
-                FontMetrics metrics = g2d.getFontMetrics();
-                int width = metrics.stringWidth(text);
-                g2d.drawString(text,
-                        x - width/2,
-                        y + textHeight/4 - 1);
-            }
-        };
-        logoPanel.setOpaque(false);
-        logoPanel.setPreferredSize(new Dimension(400, 150));
-        panel.add(logoPanel, BorderLayout.CENTER);
-
-        // Create elegant progress bar
-        progressBar = new JProgressBar() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Draw progress bar background with glow
-                g2d.setColor(new Color(35, 39, 42, 150));
-                RoundRectangle2D background = new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 10, 10);
-                g2d.fill(background);
-
-                // Draw progress with gradient and animation
-                int width = (int) (getWidth() * (getValue() / 100.0));
-
-                // Animated gradient with shift based on rotation
-                float gradientShift = (float)(rotationAngle / (2 * Math.PI));
-                GradientPaint gradient = new GradientPaint(
-                        width * gradientShift, 0, GREEN_COLOR,
-                        width * (gradientShift + 0.5f), getHeight(), DARK_GREEN
-                );
-                g2d.setPaint(gradient);
-
-                RoundRectangle2D progressShape = new RoundRectangle2D.Float(0, 0, width, getHeight(), 10, 10);
-                g2d.fill(progressShape);
-
-                // Add shine effect to progress bar
-                if (width > 0) {
-                    g2d.setColor(new Color(255, 255, 255, 60));
-                    g2d.setClip(progressShape);
-                    g2d.fillRect(0, 0, width, getHeight()/3);
-                    g2d.setClip(null);
-                }
-
-                // Draw glow around progress
-                if (width > 0) {
-                    g2d.setColor(new Color(GREEN_COLOR.getRed(), GREEN_COLOR.getGreen(), GREEN_COLOR.getBlue(), 30));
-                    g2d.setStroke(new BasicStroke(3f));
-                    g2d.draw(new RoundRectangle2D.Float(0, 0, width, getHeight(), 10, 10));
-                }
-
-                // Draw progress text with shadow
-                if (isStringPainted()) {
-                    String progressText = getString();
-                    FontMetrics fm = g2d.getFontMetrics();
-                    int textWidth = fm.stringWidth(progressText);
-                    int textHeight = fm.getHeight();
-
-                    // Draw text shadow
-                    g2d.setColor(new Color(0, 0, 0, 120));
-                    g2d.drawString(progressText,
-                            (getWidth() - textWidth) / 2 + 1,
-                            (getHeight() + textHeight) / 2 - fm.getDescent() + 1);
-
-                    // Draw text
-                    g2d.setColor(LIGHT_GREEN);
-                    g2d.drawString(progressText,
-                            (getWidth() - textWidth) / 2,
-                            (getHeight() + textHeight) / 2 - fm.getDescent());
-                }
-
-                g2d.dispose();
-            }
-
-            @Override
-            public void setValue(int n) {
-                int oldValue = getValue();
-                super.setValue(n);
-                if (n > oldValue) {
-                    // Flash the glow effect when progress increases
-                    glowIntensity = 1.0;
+                
+                // Completely transparent
+                
+                // Draw brighter particles
+                for (JoyParticle particle : particles) {
+                    particle.draw(g2d);
                 }
             }
         };
-        progressBar.setOpaque(false);
-        progressBar.setBorderPainted(false);
-        progressBar.setStringPainted(true);
-        progressBar.setFont(new Font("Arial", Font.BOLD, 12));
-        progressBar.setPreferredSize(new Dimension(300, 20));
-        progressBar.setForeground(GREEN_COLOR);
-
-        // Status label with animated dots
-        statusLabel = new JLabel("Loading...") {
-            private int dotCount = 0;
-            private long lastDotTime = 0;
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                long now = System.currentTimeMillis();
-                if (now - lastDotTime > 500) {
-                    dotCount = (dotCount + 1) % 4;
-                    lastDotTime = now;
-
-                    StringBuilder text = new StringBuilder(getText().replaceAll("\\.+$", ""));
-                    for (int i = 0; i < dotCount; i++) {
-                        text.append(".");
-                    }
-                    super.setText(text.toString());
-                }
-
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                FontMetrics fm = g2d.getFontMetrics();
-                String text = getText();
-                int textWidth = fm.stringWidth(text);
-
-                // Draw text shadow
-                g2d.setColor(new Color(0, 0, 0, 100));
-                g2d.drawString(text, (getWidth() - textWidth) / 2 + 1, fm.getAscent() + 1);
-
-                // Draw text with gradient
-                GradientPaint textGradient = new GradientPaint(
-                        0, 0, LIGHT_GREEN,
-                        0, getHeight(), GREEN_COLOR
-                );
-                g2d.setPaint(textGradient);
-                g2d.drawString(text, (getWidth() - textWidth) / 2, fm.getAscent());
-
-                g2d.dispose();
-            }
-        };
-        statusLabel.setForeground(GREEN_COLOR);
-        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        statusLabel.setFont(new Font("Arial", Font.BOLD, 14));
-
-        // Bottom panel with glossy effect
-        JPanel bottomPanel = new JPanel() {
+        mainPanel.setOpaque(false);
+        
+        // Center panel for logo and animations - transparent
+        JPanel centerPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g.create();
+                Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-                // Draw subtle background
-                g2d.setColor(new Color(25, 30, 35, 120));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-
-                // Add glossy highlight
-                g2d.setColor(new Color(255, 255, 255, 15));
-                g2d.fillRoundRect(5, 5, getWidth() - 10, getHeight() / 2 - 5, 8, 8);
-
-                g2d.dispose();
+                int centerX = getWidth() / 2;
+                int centerY = getHeight() / 2 + (int)bounceHeight;
+                
+                // Draw brighter logo background
+                drawBrighterLogoBg(g2d, centerX, centerY);
+                
+                // Draw brighter ring animation
+                drawBrighterRings(g2d, centerX, centerY);
+                
+                // Draw professional logo "C²" with increased brightness
+                drawBrighterLogo(g2d, centerX, centerY);
+            }
+            
+            private void drawBrighterLogoBg(Graphics2D g2d, int centerX, int centerY) {
+                // Create a brighter circular backdrop for the logo
+                int bgSize = 140;
+                
+                // Outer glow with increased brightness
+                RadialGradientPaint outerGlow = new RadialGradientPaint(
+                    centerX, centerY, bgSize,
+                    new float[]{0.4f, 1.0f},
+                    new Color[]{
+                        new Color(120, 255, 150, 15), // Brighter outer glow
+                        new Color(0, 0, 0, 0)
+                    }
+                );
+                g2d.setPaint(outerGlow);
+                g2d.fillOval(centerX - bgSize, centerY - bgSize, bgSize * 2, bgSize * 2);
+                
+                // Inner brighter backdrop
+                int innerSize = 80;
+                
+                // Brighter gradient background
+                RadialGradientPaint innerGlow = new RadialGradientPaint(
+                    centerX, centerY, innerSize,
+                    new float[]{0.0f, 0.8f},
+                    new Color[]{
+                        new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), 
+                                  PRIMARY_COLOR.getBlue(), 25), // Increased alpha
+                        new Color(ACCENT_COLOR1.getRed(), ACCENT_COLOR1.getGreen(), 
+                                 ACCENT_COLOR1.getBlue(), 5)
+                    }
+                );
+                g2d.setPaint(innerGlow);
+                g2d.fillOval(centerX - innerSize, centerY - innerSize, innerSize * 2, innerSize * 2);
+            }
+            
+            private void drawBrighterRings(Graphics2D g2d, int centerX, int centerY) {
+                // Draw brighter, more visible rings
+                
+                // Outer ring - brighter green
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.setColor(new Color(SECONDARY_COLOR.getRed(), SECONDARY_COLOR.getGreen(), 
+                                      SECONDARY_COLOR.getBlue(), 70)); // Increased visibility
+                g2d.draw(new Ellipse2D.Double(centerX - 75, centerY - 75, 150, 150));
+                
+                // Middle ring - rotating with dashed style
+                float[] dashes = {3f, 7f};
+                g2d.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, dashes, 
+                                             (float)((rotationAngle * 1.5) % (2 * Math.PI))));
+                g2d.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), 
+                                      PRIMARY_COLOR.getBlue(), 80)); // Brighter
+                g2d.draw(new Ellipse2D.Double(centerX - 60, centerY - 60, 120, 120));
+                
+                // Inner ring - brighter light green
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.setColor(new Color(ACCENT_COLOR1.getRed(), ACCENT_COLOR1.getGreen(), 
+                                      ACCENT_COLOR1.getBlue(), 60)); // Brighter
+                g2d.draw(new Ellipse2D.Double(centerX - 45, centerY - 45, 90, 90));
+                
+                // Add an extra bright pulsing ring for more luminosity
+                g2d.setStroke(new BasicStroke(1.0f));
+                float pulseRadius = (float)(90 * pulseScale);
+                g2d.setColor(new Color(180, 255, 200, 30 + (int)(20 * Math.sin(rotationAngle * 2)))); // Pulsing alpha
+                g2d.draw(new Ellipse2D.Double(
+                    centerX - pulseRadius/2, centerY - pulseRadius/2, 
+                    pulseRadius, pulseRadius
+                ));
+            }
+            
+            private void drawBrighterLogo(Graphics2D g2d, int centerX, int centerY) {
+                // Use a professional font for the logo
+                Font logoFont = new Font("Arial", Font.BOLD, 58);
+                try {
+                    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                    String[] fonts = ge.getAvailableFontFamilyNames();
+                    for (String font : fonts) {
+                        if (font.equals("Segoe UI") || font.equals("Century Gothic") || 
+                            font.equals("Verdana") || font.equals("Helvetica")) {
+                            logoFont = new Font(font, Font.BOLD, 58);
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    // Fallback to Arial
+                }
+                
+                g2d.setFont(logoFont);
+                
+                // Draw brighter glow effect
+                if (glowIntensity > 0) {
+                    drawBrighterLogoGlow(g2d, "C2", centerX, centerY, logoFont);
+                } else {
+                    // Always have a subtle glow for brightness
+                    float tempGlow = 0.3f;
+                    drawBrighterLogoGlow(g2d, "C2", centerX, centerY, logoFont);
+                }
+                
+                // Draw logo text with brighter gradient fill
+                FontMetrics fm = g2d.getFontMetrics();
+                int textWidth = fm.stringWidth("C2");
+                int textHeight = fm.getHeight();
+                int textX = centerX - textWidth / 2;
+                int textY = centerY + fm.getHeight() / 4;
+                
+                // Create a brighter gradient for the text
+                GradientPaint textGradient = new GradientPaint(
+                    textX, textY - textHeight, 
+                    new Color(255, 255, 255), // Pure white at top
+                    textX, textY, 
+                    new Color(220, 255, 230)  // Brighter green-white at bottom
+                );
+                
+                // Create a text shape to fill with gradient
+                TextLayout textLayout = new TextLayout("C2", logoFont, g2d.getFontRenderContext());
+                Shape textShape = textLayout.getOutline(
+                    AffineTransform.getTranslateInstance(textX, textY)
+                );
+                
+                // Fill with brighter gradient
+                g2d.setPaint(textGradient);
+                g2d.fill(textShape);
+                
+                // Add a subtle outline for definition
+                g2d.setColor(new Color(80, 180, 100, 120)); // Brighter outline
+                g2d.setStroke(new BasicStroke(0.7f));
+                g2d.draw(textShape);
+                
+                // Add a bright highlight effect
+                Shape clipOld = g2d.getClip();
+                g2d.setClip(textShape);
+                g2d.setColor(new Color(255, 255, 255, 120)); // Brighter highlight
+                g2d.fillRect(textX, textY - textHeight, textWidth, textHeight / 3);
+                g2d.setClip(clipOld);
+            }
+            
+            private void drawBrighterLogoGlow(Graphics2D g2d, String text, int x, int y, Font font) {
+                FontMetrics fm = g2d.getFontMetrics(font);
+                int textX = x - fm.stringWidth(text) / 2;
+                int textY = y + fm.getHeight() / 4;
+                
+                // Create a copy of the graphics object
+                Graphics2D g2dCopy = (Graphics2D) g2d.create();
+                
+                // Brighter professional glow effect
+                g2dCopy.setFont(font);
+                
+                // Brighter outer glow
+                float alpha = (float)(0.2 * (glowIntensity > 0 ? glowIntensity : 0.3));
+                
+                // Use brighter colors for the glow
+                Color[] glowColors = {
+                    new Color(20, 200, 100, 100),  // Bright green
+                    new Color(100, 230, 130, 80),  // Brighter green
+                    new Color(160, 255, 180, 60)   // Very bright green
+                };
+                
+                // Multiple layers of glow for more brightness
+                for (int i = 0; i < glowColors.length; i++) {
+                    for (int j = 0; j < 2; j++) { // Double-layer the glow
+                        double angle = Math.PI / 3 * i + rotationAngle / 2;
+                        int offsetX = (int)(Math.cos(angle) * (2 + j));
+                        int offsetY = (int)(Math.sin(angle) * (2 + j));
+                        
+                        g2dCopy.setColor(new Color(
+                            glowColors[i].getRed(), 
+                            glowColors[i].getGreen(), 
+                            glowColors[i].getBlue(),
+                            (int)(glowColors[i].getAlpha() * alpha * (1.0 - j * 0.3))
+                        ));
+                        
+                        g2dCopy.drawString(text, textX + offsetX, textY + offsetY);
+                    }
+                }
+                
+                // Add an extra bright center glow
+                g2dCopy.setColor(new Color(255, 255, 255, (int)(40 * alpha)));
+                g2dCopy.drawString(text, textX, textY);
+                
+                // Cleanup
+                g2dCopy.dispose();
             }
         };
-        bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
-        bottomPanel.setOpaque(false);
-
-        JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        progressPanel.setOpaque(false);
-        progressPanel.add(progressBar);
-
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        statusPanel.setOpaque(false);
-        statusPanel.add(statusLabel);
-
-        bottomPanel.add(progressPanel);
-        bottomPanel.add(Box.createVerticalStrut(10));
-        bottomPanel.add(statusPanel);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
-
-        panel.add(bottomPanel, BorderLayout.SOUTH);
-
-        add(panel);
-
-        // Start animation timer with more complex animations
-        animationTimer = new Timer(16, e -> {
-            // Rotate elements
-            rotationAngle += 0.03;
-            if (rotationAngle >= 2 * Math.PI) {
-                rotationAngle = 0;
+        centerPanel.setOpaque(false);
+        
+        // Brighter status message
+        statusLabel = new JLabel("Initializing system...") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw status text with professional style
+                String text = getText();
+                
+                // Use a professional font
+                g2d.setFont(new Font("Arial", Font.PLAIN, 14));
+                FontMetrics fm = g2d.getFontMetrics();
+                
+                // Center the text
+                int width = getWidth();
+                int x = (width - fm.stringWidth(text)) / 2;
+                int y = fm.getAscent();
+                
+                // Draw subtle shadow
+                g2d.setColor(new Color(0, 0, 0, 30));
+                g2d.drawString(text, x + 1, y + 1);
+                
+                // Draw text with a brighter professional green
+                g2d.setColor(new Color(80, 220, 130)); // Brighter green
+                g2d.drawString(text, x, y);
             }
-
-            // Pulse animation
+        };
+        statusLabel.setForeground(new Color(80, 220, 130)); // Brighter green
+        statusLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Create a panel for the status label
+        JPanel statusPanel = new JPanel(new BorderLayout());
+        statusPanel.setOpaque(false);
+        statusPanel.add(statusLabel, BorderLayout.CENTER);
+        statusPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
+        
+        // Layout components
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+        mainPanel.add(statusPanel, BorderLayout.SOUTH);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        setContentPane(mainPanel);
+        
+        // Initialize particles - slightly more for brightness
+        for (int i = 0; i < 45; i++) {
+            particles.add(new JoyParticle());
+        }
+        
+        // Start animation
+        animationTimer = new Timer(20, e -> {
+            rotationAngle = (rotationAngle + 0.01) % (2 * Math.PI);
+            
+            bounceHeight += bounceDelta;
+            if (bounceHeight > 3 || bounceHeight < -3) {
+                bounceDelta = -bounceDelta;
+            }
+            
             pulseScale += pulseDelta;
             if (pulseScale > 1.05 || pulseScale < 0.95) {
                 pulseDelta = -pulseDelta;
             }
 
-            // Glow animation
             if (glowIntensity > 0) {
-                glowIntensity -= glowDelta;
-                if (glowIntensity < 0) {
-                    glowIntensity = 0;
-                }
+                glowIntensity -= 0.01;
+                if (glowIntensity < 0) glowIntensity = 0;
             }
-
-            // Update particles
-            for (Particle p : particles) {
-                p.update();
+            
+            for (JoyParticle particle : particles) {
+                particle.update();
             }
-
-            // Repaint components
+            
             repaint();
         });
         animationTimer.start();
     }
 
     public void updateProgress(int progress, String status) {
-        // Animate progress bar smoothly
-        final int targetProgress = progress;
-        final int currentProgress = progressBar.getValue();
+        SwingUtilities.invokeLater(() -> {
+            statusLabel.setText(status);
+            
+            // Add brighter glow effect for status updates
+            if (progress % 25 == 0 && progress > 0) {
+                Timer glowTimer = new Timer(30, null);
+                glowTimer.addActionListener(new ActionListener() {
+                    int frames = 0;
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        glowIntensity = 1.0; // Full glow
+                        
+                        // Add a few bright particles
+                        if (frames < 3) {
+                            for (int i = 0; i < 5; i++) {
+                                JoyParticle particle = new JoyParticle();
+                                particle.y = getHeight() / 2;
+                                particle.x = getWidth() / 2;
+                                particle.ySpeed = -1f - random.nextFloat() * 1.5f;
+                                particle.alpha = 0.6f; // Brighter particles
+                                particles.add(particle);
+                            }
+                        }
+                        
+                        frames++;
+                        if (frames >= 5) {
+                            glowTimer.stop();
+                        }
+                    }
+                });
+                glowTimer.start();
+            }
 
-        if (targetProgress > currentProgress) {
-            Timer progressTimer = new Timer(10, null);
-            progressTimer.addActionListener(e -> {
-                int value = progressBar.getValue();
-                if (value < targetProgress) {
-                    progressBar.setValue(value + 1);
-                    // Increase glow briefly when progressing
-                    glowIntensity = Math.max(glowIntensity, 0.3);
-                } else {
-                    ((Timer)e.getSource()).stop();
-                }
-            });
-            progressTimer.start();
-        } else {
-            progressBar.setValue(progress);
-        }
-
-        statusLabel.setText(status);
+            // When loading is complete (progress = 100), show MetaMaskAuth
+            if (progress >= 100) {
+                statusLabel.setText("Waiting for MetaMask authentication...");
+            }
+        });
     }
-
-    // Make sure to stop the animation timer when the window is disposed
+    
     @Override
     public void dispose() {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
+        animationTimer.stop();
         super.dispose();
+    }
+
+    private void initializeAuthentication() {
+        // No need to create a new auth window - it will be managed by Main.java
+        statusLabel.setText("Waiting for authentication...");
     }
 }
