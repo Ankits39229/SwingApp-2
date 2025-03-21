@@ -18,7 +18,7 @@ public class Assistant extends JPanel {
     private static final Color SECONDARY_COLOR = new Color(30, 30, 30);
     private static final Color ACCENT_COLOR = new Color(79, 147, 255);
     private static final Color TEXT_COLOR = new Color(245, 245, 245);
-//    private static final Color SUCCESS_COLOR = new Color(75, 181, 67);
+    //    private static final Color SUCCESS_COLOR = new Color(75, 181, 67);
 //    private static final Color ERROR_COLOR = new Color(255, 85, 85);
     private static final Color USER_MESSAGE_COLOR = new Color(187, 187, 187);
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
@@ -28,7 +28,7 @@ public class Assistant extends JPanel {
     private JTextPane chatArea;
     private JTextField userInput;
     private HashMap<String, Runnable> actions;
-//    private JProgressBar progressBar;
+    //    private JProgressBar progressBar;
     private StyledDocument doc;
     private Style userStyle;
     private Style assistantStyle;
