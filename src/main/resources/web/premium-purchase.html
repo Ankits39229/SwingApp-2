@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Access - Windows Security Suite</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117;
+            color: #e6edf3;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #161b22;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0 0 20px;
+            color: #fff;
+            font-size: 28px;
+        }
+        p {
+            margin: 15px 0;
+            line-height: 1.5;
+            color: #c9d1d9;
+        }
+        .feature-list {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        .feature-list li {
+            margin: 12px 0;
+        }
+        .btn {
+            background-color: #3861fb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .btn:hover {
+            background-color: #2d4fd7;
+        }
+        .btn:disabled {
+            background-color: #2c3138;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            background-color: #0d1117;
+            display: none;
+        }
+        .success {
+            background-color: #238636;
+            display: block;
+        }
+        .error {
+            background-color: #da3633;
+            display: block;
+        }
+        .warning {
+            background-color: #b08800;
+            display: block;
+        }
+        .subtitle {
+            color: #8b949e;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        .price {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3861fb;
+            margin: 20px 0;
+        }
+        .network-badge {
+            display: inline-block;
+            background-color: #da3633;
+            color: white;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+        .eth-logo {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Premium Access <span class="network-badge">Sepolia Testnet</span></h1>
+        <div class="subtitle">Unlock advanced security features in Windows Security Suite</div>
+        
+        <div class="price">0.01 ETH</div>
+        
+        <p>Purchase premium access to unlock:</p>
+        <ul class="feature-list">
+            <li>Advanced Malware Scanning and Detection</li>
+            <li>Comprehensive Security Audit and Reports</li>
+            <li>Priority Support and Updates</li>
+        </ul>
+        
+        <button id="connectBtn" class="btn">Connect MetaMask</button>
+        <button id="purchaseBtn" class="btn" disabled>Purchase Premium Access</button>
+        
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        // Contract details
+        const contractAddress = "0x221280f7ba730992be16277ffe9d5dd6e16286a6";
+        const contractABI = [
+            {
+                "inputs": [],
+                "name": "purchasePremium",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+                "name": "hasPremiumAccess",
+                "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+        
+        const connectBtn = document.getElementById('connectBtn');
+        const purchaseBtn = document.getElementById('purchaseBtn');
+        const statusDiv = document.getElementById('status');
+        
+        let userAccount = null;
+        let web3 = null;
+        let contract = null;
+        
+        // Connect to MetaMask
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    // Request account access
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userAccount = accounts[0];
+                    
+                    // Check if we're on Sepolia testnet (chainId 11155111)
+                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    if (chainId !== '0xaa36a7') { // Sepolia chainId in hex
+                        showStatus('Please switch to Sepolia testnet in MetaMask', 'warning');
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0xaa36a7' }],
+                        });
+                    }
+                    
+                    // Setup Web3
+                    web3 = new Web3(window.ethereum);
+                    contract = new web3.eth.Contract(contractABI, contractAddress);
+                    
+                    // Update UI
+                    connectBtn.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(38);
+                    purchaseBtn.disabled = false;
+                    
+                    // Check if user already has premium access
+                    const hasPremium = await contract.methods.hasPremiumAccess(userAccount).call();
+                    if (hasPremium) {
+                        showStatus('You already have premium access!', 'success');
+                        purchaseBtn.disabled = true;
+                    }
+                    
+                    // Setup listeners for account change
+                    window.ethereum.on('accountsChanged', (accounts) => {
+                        window.location.reload();
+                    });
+                    
+                    // Setup listeners for chain change
+                    window.ethereum.on('chainChanged', (chainId) => {
+                        window.location.reload();
+                    });
+                    
+                } catch (error) {
+                    console.error(error);
+                    showStatus('Failed to connect: ' + error.message, 'error');
+                }
+            } else {
+                showStatus('MetaMask is not installed. Please install MetaMask to continue.', 'error');
+            }
+        }
+        
+        // Purchase premium access
+        async function purchasePremium() {
+            if (!web3 || !contract || !userAccount) {
+                showStatus('Please connect your wallet first', 'warning');
+                return;
+            }
+            
+            try {
+                purchaseBtn.disabled = true;
+                showStatus('Processing transaction...', 'warning');
+                
+                // Call the contract function to purchase premium access
+                await contract.methods.purchasePremium().send({
+                    from: userAccount,
+                    value: web3.utils.toWei('0.01', 'ether')
+                });
+                
+                showStatus('Successfully purchased premium access!', 'success');
+                
+                // Notify the Java application through a callback
+                try {
+                    showStatus('Notifying application of purchase...', 'warning');
+                    
+                    // Call the callback endpoint with retry mechanism
+                    let retryCount = 0;
+                    const maxRetries = 3;
+                    
+                    async function notifyPurchase() {
+                        try {
+                            const response = await fetch(`http://localhost:8080/api/premium/callback?account=${userAccount}`);
+                            const data = await response.json();
+                            
+                            if (data.status === 'success') {
+                                console.log('Callback successful:', data);
+                                showStatus('Application notified successfully!', 'success');
+                                
+                                // Try to send a message to the opener window as well
+                                try {
+                                    if (window.opener) {
+                                        window.opener.postMessage({ 
+                                            type: 'premium_purchased', 
+                                            account: userAccount 
+                                        }, '*');
+                                        console.log('Posted message to opener window');
+                                    }
+                                } catch (err) {
+                                    console.error('Error posting message to opener:', err);
+                                }
+                                
+                                // Close this window after a short delay
+                                setTimeout(() => {
+                                    window.close();
+                                }, 3000);
+                            } else {
+                                throw new Error('Callback returned error status');
+                            }
+                        } catch (error) {
+                            console.error('Callback attempt failed:', error);
+                            retryCount++;
+                            
+                            if (retryCount < maxRetries) {
+                                console.log(`Retrying callback (${retryCount}/${maxRetries})...`);
+                                showStatus(`Retrying notification (${retryCount}/${maxRetries})...`, 'warning');
+                                setTimeout(notifyPurchase, 1000); // Wait 1 second before retry
+                            } else {
+                                console.error('Max retries reached, giving up on callback');
+                                showStatus('Could not notify application. Please restart the application for premium access to take effect.', 'error');
+                            }
+                        }
+                    }
+                    
+                    // Start the notification process
+                    notifyPurchase();
+                } catch (e) {
+                    console.error('Fatal error in notification process:', e);
+                    showStatus('Error notifying application: ' + e.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error(error);
+                showStatus('Transaction failed: ' + error.message, 'error');
+                purchaseBtn.disabled = false;
+            }
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+        
+        // Add event listeners
+        connectBtn.addEventListener('click', connectWallet);
+        purchaseBtn.addEventListener('click', purchasePremium);
+        
+        // Load Web3 library
+        function loadScript() {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js';
+            script.onload = function() {
+                console.log('Web3 loaded');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Load Web3 on page load
+        loadScript();
+    </script>
+</body>
+</html> 

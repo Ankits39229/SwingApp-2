@@ -20,6 +20,7 @@ public class SidebarMenu extends JPanel {
     private Color selectedColor = new Color(20, 22, 28);
     private Color hoverColor = new Color(25, 27, 32);
     private Color borderColor = new Color(35, 38, 45);
+    private static final Color DISABLED_TEXT_COLOR = new Color(120, 120, 120);
     
     // Sidebar configuration
     private final int menuWidth;
@@ -31,6 +32,7 @@ public class SidebarMenu extends JPanel {
     private final Map<String, JPanel> menuItems = new HashMap<>();
     private final Map<String, String> menuDisplayNames = new HashMap<>();
     private final Map<String, Color> menuItemColors = new HashMap<>();
+    private final Map<String, Boolean> premiumFeatures = new HashMap<>();
     private String currentSelection = null;
     
     // Icon URLs for menu items
@@ -49,6 +51,12 @@ public class SidebarMenu extends JPanel {
     
     // Callback for when a menu item is selected
     private Consumer<String> onSelectionChanged;
+    
+    // Add a flag to track if premium features are accessible
+    private Map<String, Boolean> premiumAccessible = new HashMap<>();
+    
+    // Add a callback for premium feature clicks
+    private Consumer<String> onPremiumFeatureClicked;
     
     /**
      * Create a sidebar menu with default settings
@@ -75,6 +83,13 @@ public class SidebarMenu extends JPanel {
         
         // Custom painting for the background
         setOpaque(false);
+        
+        // Initialize collections
+        menuItems.clear();
+        menuDisplayNames.clear();
+        menuItemColors.clear();
+        premiumFeatures.clear();
+        premiumAccessible.clear();
     }
     
     @Override
@@ -122,6 +137,18 @@ public class SidebarMenu extends JPanel {
      * @param iconColor Color for the icon
      */
     public void addMenuItem(String id, String displayText, Color iconColor) {
+        addMenuItem(id, displayText, iconColor, false);
+    }
+    
+    /**
+     * Add a menu item to the sidebar with premium status
+     * 
+     * @param id Unique identifier for the menu item
+     * @param displayText Text to display
+     * @param iconColor Color for the icon
+     * @param isPremium Whether this is a premium feature
+     */
+    public void addMenuItem(String id, String displayText, Color iconColor, boolean isPremium) {
         JPanel item = new JPanel();
         item.setName(id);
         item.setLayout(new BoxLayout(item, BoxLayout.X_AXIS));
@@ -133,6 +160,7 @@ public class SidebarMenu extends JPanel {
         // Store the display name and color for later use
         menuDisplayNames.put(id, displayText);
         menuItemColors.put(id, iconColor);
+        premiumFeatures.put(id, isPremium);
         
         if (showIcons) {
             // Get icon URL for this menu item
@@ -146,7 +174,9 @@ public class SidebarMenu extends JPanel {
             SwingWorker<ImageIcon, Void> iconLoader = new SwingWorker<>() {
                 @Override
                 protected ImageIcon doInBackground() {
-                    return IconLoader.loadIcon(iconUrl, iconSize, iconSize, iconColor);
+                    // Use a grayed out icon color for premium features that are not accessible
+                    Color actualIconColor = isPremium ? new Color(iconColor.getRed(), iconColor.getGreen(), iconColor.getBlue(), 120) : iconColor;
+                    return IconLoader.loadIcon(iconUrl, iconSize, iconSize, actualIconColor);
                 }
                 
                 @Override
@@ -168,25 +198,51 @@ public class SidebarMenu extends JPanel {
         
         // Menu text
         JLabel label = new JLabel(displayText);
-        label.setForeground(textColor);
+        // Use grayed out text for premium features that are not accessible
+        label.setForeground(isPremium ? DISABLED_TEXT_COLOR : textColor);
         label.setFont(new Font("Segoe UI", Font.BOLD, 15));
 
         item.add(label);
+        
+        // Add premium badge if this is a premium feature
+        if (isPremium) {
+            item.add(Box.createRigidArea(new Dimension(10, 0)));
+            JLabel premiumLabel = new JLabel("PRO");
+            premiumLabel.setFont(new Font("Segoe UI", Font.BOLD, 10));
+            premiumLabel.setForeground(new Color(255, 215, 0)); // Gold color
+            premiumLabel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(255, 215, 0), 1, true),
+                    BorderFactory.createEmptyBorder(1, 3, 1, 3)
+            ));
+            item.add(premiumLabel);
+        }
+        
         item.add(Box.createHorizontalGlue());
 
-        // Add hover and selection effects
+        // Add hover and selection effects only for non-premium or accessible premium items
         item.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                selectMenuItem(id);
+                // Only respond to clicks for non-premium items or if premium is accessible
+                if (!isPremium || isPremiumAccessible(id)) {
+                    selectMenuItem(id);
+                } else {
+                    // For premium features without access, show premium dialog
+                    if (onPremiumFeatureClicked != null) {
+                        onPremiumFeatureClicked.accept(id);
+                    }
+                }
             }
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                if (!id.equals(currentSelection)) {
-                    item.setBackground(hoverColor);
+                // Only show hover for non-premium items or if premium is accessible
+                if (!isPremium || isPremiumAccessible(id)) {
+                    if (!id.equals(currentSelection)) {
+                        item.setBackground(hoverColor);
+                    }
+                    setCursor(new Cursor(Cursor.HAND_CURSOR));
                 }
-                setCursor(new Cursor(Cursor.HAND_CURSOR));
             }
 
             @Override
@@ -325,5 +381,94 @@ public class SidebarMenu extends JPanel {
                 }
             }
         }
+    }
+    
+    /**
+     * Check if a menu item is a premium feature
+     * 
+     * @param id The ID of the menu item
+     * @return true if the menu item is a premium feature
+     */
+    public boolean isPremiumFeature(String id) {
+        return premiumFeatures.getOrDefault(id, false);
+    }
+    
+    /**
+     * Set callback for when a premium feature is clicked but not accessible
+     */
+    public void setOnPremiumFeatureClicked(Consumer<String> callback) {
+        this.onPremiumFeatureClicked = callback;
+    }
+    
+    /**
+     * Update the premium access status for menu items
+     * 
+     * @param hasAccess Whether the user has premium access
+     */
+    public void updatePremiumAccess(boolean hasAccess) {
+        System.out.println("🎮 SidebarMenu.updatePremiumAccess(" + hasAccess + ")");
+        
+        try {
+            // Reset our tracking map
+            premiumAccessible.clear();
+            
+            // Initialize all premium features with the current access status
+            for (String id : menuItems.keySet()) {
+                if (isPremiumFeature(id)) {
+                    System.out.println("🎮 Updating premium menu item: " + id + " with access: " + hasAccess);
+                    premiumAccessible.put(id, hasAccess);
+                    
+                    // Get the menu item panel
+                    JPanel item = menuItems.get(id);
+                    if (item != null) {
+                        // Force update of all components in the panel
+                        for (Component comp : item.getComponents()) {
+                            if (comp instanceof JLabel) {
+                                JLabel label = (JLabel) comp;
+                                // Don't update the PRO badge color
+                                if (!label.getText().equals("PRO")) {
+                                    label.setForeground(hasAccess ? textColor : DISABLED_TEXT_COLOR);
+                                    System.out.println("🎮 Updated label for " + id + ": " + label.getText());
+                                }
+                            }
+                        }
+                        
+                        // Force repaint
+                        item.invalidate();
+                        item.validate();
+                        item.repaint();
+                    }
+                }
+            }
+            
+            // Force full repaint of the sidebar
+            invalidate();
+            validate();
+            repaint();
+            
+            // Debug output of premium access status
+            System.out.println("🎮 Premium access status after update:");
+            for (String id : premiumAccessible.keySet()) {
+                System.out.println("🎮   " + id + ": " + premiumAccessible.get(id));
+            }
+        } catch (Exception e) {
+            System.err.println("Error updating premium access: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Check if a premium feature is accessible
+     */
+    private boolean isPremiumAccessible(String id) {
+        boolean isPremium = isPremiumFeature(id);
+        Boolean storedAccess = premiumAccessible.get(id);
+        boolean isAccessible = !isPremium || (storedAccess != null && storedAccess);
+        
+        System.out.println("🔍 Access check for " + id + ": isPremium=" + isPremium 
+            + ", stored access=" + storedAccess 
+            + ", final result=" + isAccessible);
+        
+        return isAccessible;
     }
 }

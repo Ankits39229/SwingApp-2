@@ -32,24 +32,24 @@ public class MetaMaskAuth extends JFrame {
     private AuthenticationListener authListener;
 
     public MetaMaskAuth() {
-        setTitle("MetaMask Authentication");
-        setSize(400, 200);
+        setTitle("Connect MetaMask Wallet");
+        setSize(450, 220);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // Prevent closing without proper handling
 
-        // Create main panel
+        // Create main panel with better styling
         mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setLayout(new BorderLayout(15, 15));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
 
-        // Status label
-        statusLabel = new JLabel("Please connect your MetaMask wallet to continue");
+        // Status label with improved text
+        statusLabel = new JLabel("Please connect your MetaMask wallet to access premium features");
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        statusLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
-        // Connect button
+        // Connect button with better styling
         connectButton = new JButton("Connect MetaMask");
-        connectButton.setFont(new Font("Arial", Font.BOLD, 14));
+        connectButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         connectButton.addActionListener(e -> connectMetaMask());
 
         // Add components to panel
@@ -64,19 +64,21 @@ public class MetaMaskAuth extends JFrame {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
                 if (!isAuthenticated) {
+                    // Simplified message that makes it clear the app won't exit
                     int result = JOptionPane.showConfirmDialog(MetaMaskAuth.this,
-                        "Authentication is required to use the application. Exit without authenticating?",
-                        "Authentication Required",
+                        "Close wallet connection dialog? You can connect later from the application.",
+                        "Close Dialog",
                         JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE);
+                        JOptionPane.QUESTION_MESSAGE);
                     
                     if (result == JOptionPane.YES_OPTION) {
                         if (authListener != null) {
-                            authListener.onAuthenticationFailure("User aborted authentication");
+                            authListener.onAuthenticationFailure("User closed authentication dialog");
                         }
                         dispose();
-                        System.exit(0);
                     }
+                } else {
+                    dispose();
                 }
             }
         });
@@ -103,7 +105,6 @@ public class MetaMaskAuth extends JFrame {
                 authListener.onAuthenticationFailure("Maximum authentication attempts reached");
             }
             dispose();
-            System.exit(0);
             return;
         }
 
@@ -149,7 +150,7 @@ public class MetaMaskAuth extends JFrame {
         
         if (authAttempts >= MAX_AUTH_ATTEMPTS) {
             JOptionPane.showMessageDialog(this,
-                "Maximum authentication attempts reached. Application will exit.",
+                "Maximum authentication attempts reached. You can try again later through the Connect Wallet button.",
                 "Authentication Failed",
                 JOptionPane.ERROR_MESSAGE);
             
@@ -157,7 +158,6 @@ public class MetaMaskAuth extends JFrame {
                 authListener.onAuthenticationFailure("Maximum authentication attempts reached");
             }
             dispose();
-            System.exit(0);
         }
     }
 
@@ -180,7 +180,7 @@ public class MetaMaskAuth extends JFrame {
                     // Check for timeout
                     if (System.currentTimeMillis() - startTime > TimeUnit.SECONDS.toMillis(AUTH_TIMEOUT_SECONDS)) {
                         System.out.println("Authentication timeout for txId: " + txId);
-                        SwingUtilities.invokeLater(() -> handleAuthError("Authentication timeout. Please try again."));
+                        SwingUtilities.invokeLater(() -> handleAuthError("Authentication timeout. Please try again or connect later."));
                         break;
                     }
 
@@ -198,6 +198,27 @@ public class MetaMaskAuth extends JFrame {
                         System.out.println("Authentication successful for txId: " + txId + " with account: " + status.getAccount());
                         isAuthenticated = true;
                         String account = status.getAccount();
+                        
+                        // Update the default authentication status with this account
+                        // This ensures persistence across different parts of the app
+                        AuthenticationEndpoint.AuthenticationStatus defaultStatus = authEndpoint.getStatus("default");
+                        if (defaultStatus == null) {
+                            defaultStatus = authEndpoint.createNewStatus("default");
+                        }
+                        if (defaultStatus != null) {
+                            defaultStatus.setAuthenticated(true);
+                            defaultStatus.setAccount(account);
+                            System.out.println("✅ Updated default authentication status with account: " + account);
+                        }
+                        
+                        // Use the setter method in Main to update the cached address
+                        try {
+                            main.java.org.anynomous.Main.setCachedUserAddress(account);
+                            System.out.println("✅ Used Main.setCachedUserAddress to store: " + account);
+                        } catch (Exception e) {
+                            System.out.println("⚠️ Error calling Main.setCachedUserAddress: " + e.getMessage());
+                            e.printStackTrace();
+                        }
                         
                         SwingUtilities.invokeLater(() -> {
                             statusLabel.setText("Successfully authenticated with account: " + 

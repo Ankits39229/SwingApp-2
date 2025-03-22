@@ -13,8 +13,11 @@ import java.awt.geom.*;
 import java.awt.LinearGradientPaint;
 import java.awt.datatransfer.StringSelection;
 import java.awt.Toolkit;
+import main.java.org.anynomous.utils.PremiumAccessManager;
+import main.java.org.anynomous.AuthenticationEndpoint;
+import main.java.org.anynomous.utils.PremiumAccessManager.PremiumAccessListener;
 
-public class Audit extends JPanel {
+public class Audit extends JPanel implements PremiumAccessListener {
 
     private static final Color PRIMARY_DARK = new Color(18, 18, 18);
     private static final Color SECONDARY_DARK = new Color(28, 28, 28);
@@ -84,6 +87,9 @@ public class Audit extends JPanel {
     private JButton viewAuditButton;
     private File currentAuditFile;
     private JButton shareAuditButton;
+    private PremiumAccessManager premiumAccessManager;
+    private JPanel premiumOverlayPanel;
+    private boolean hasPremiumAccess = false;
 //    private PinataService pinataService;
 //    private BlockchainService blockchainService;
 
@@ -174,11 +180,122 @@ public class Audit extends JPanel {
     }
 
     public Audit() {
+        // Check premium access first
+        premiumAccessManager = PremiumAccessManager.getInstance();
+        premiumAccessManager.addPremiumAccessListener(this);
+        checkPremiumAccess();
+        
         setupMainPanel();
         setupAnimations();
         createLayout();
         initializeParticles();
         
+        // Add premium overlay if needed
+        if (!hasPremiumAccess) {
+            addPremiumOverlay();
+        }
+    }
+
+    /**
+     * Check if the current user has premium access
+     */
+    private void checkPremiumAccess() {
+        // Get the current user address from Authentication
+        String userAddress = null;
+        if (AuthenticationEndpoint.getInstance().getStatus("default").isAuthenticated()) {
+            userAddress = AuthenticationEndpoint.getInstance().getStatus("default").getAccount();
+        }
+        
+        // Check premium access
+        if (userAddress != null && !userAddress.isEmpty()) {
+            hasPremiumAccess = premiumAccessManager.hasPremiumAccess(userAddress);
+        } else {
+            hasPremiumAccess = false;
+        }
+    }
+    
+    /**
+     * Add premium overlay that blocks usage of this panel
+     */
+    private void addPremiumOverlay() {
+        // Create semi-transparent overlay
+        premiumOverlayPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setColor(new Color(0, 0, 0, 200)); // Semi-transparent black
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                super.paintComponent(g);
+            }
+        };
+        premiumOverlayPanel.setOpaque(false);
+        
+        // Center panel with premium message
+        JPanel messagePanel = new JPanel(new BorderLayout(20, 20));
+        messagePanel.setOpaque(false);
+        messagePanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+        
+        // Premium message
+        JLabel lockIcon = new JLabel("🔒");
+        lockIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
+        lockIcon.setForeground(new Color(255, 215, 0)); // Gold color
+        lockIcon.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        JLabel titleLabel = new JLabel("Premium Feature");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        JTextArea messageArea = new JTextArea(
+            "This advanced Security Audit feature requires premium access. " +
+            "Purchase premium access to unlock all advanced features including Malware Scanner."
+        );
+        messageArea.setWrapStyleWord(true);
+        messageArea.setLineWrap(true);
+        messageArea.setOpaque(false);
+        messageArea.setEditable(false);
+        messageArea.setForeground(Color.WHITE);
+        messageArea.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        messageArea.setBackground(new Color(0, 0, 0, 0));
+        
+        // Purchase button
+        JButton purchaseButton = new JButton("Purchase Premium Access");
+        purchaseButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        purchaseButton.setForeground(Color.WHITE);
+        purchaseButton.setBackground(new Color(50, 100, 220));
+        purchaseButton.setFocusPainted(false);
+        purchaseButton.setBorderPainted(false);
+        purchaseButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        purchaseButton.addActionListener(e -> {
+            premiumAccessManager.showPremiumFeatureDialog(this, () -> {
+                premiumAccessManager.openPurchasePage();
+            });
+        });
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(purchaseButton);
+        
+        // Combine all elements
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+        contentPanel.add(lockIcon);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        contentPanel.add(titleLabel);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        contentPanel.add(messageArea);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 30)));
+        contentPanel.add(buttonPanel);
+        
+        messagePanel.add(contentPanel, BorderLayout.CENTER);
+        
+        // Center the message panel
+        premiumOverlayPanel.add(messagePanel, BorderLayout.CENTER);
+        
+        // Add overlay as glass pane to block interactions with the underlying components
+        setLayout(new OverlayLayout(this));
+        add(premiumOverlayPanel);
     }
 
     private void setupMainPanel() {
@@ -658,5 +775,100 @@ public class Audit extends JPanel {
 
     private ProgressDialog createProgressDialog() {
         return new ProgressDialog((Frame) SwingUtilities.getWindowAncestor(this));
+    }
+
+    // Flag to prevent recursive premium access checks
+    private volatile boolean isPremiumCheckInProgress = false;
+
+    @Override
+    public void onPremiumAccessUpdated(boolean hasPremiumAccess) {
+        // Prevent recursive updates
+        if (isPremiumCheckInProgress) {
+            System.out.println("⚠️ Premium check already in progress in Audit, skipping");
+            return;
+        }
+        
+        // Make sure we run UI updates on the Event Dispatch Thread
+        SwingUtilities.invokeLater(() -> {
+            try {
+                isPremiumCheckInProgress = true;
+                System.out.println("Premium access updated in Audit class: " + hasPremiumAccess);
+                this.hasPremiumAccess = hasPremiumAccess;
+                
+                // Skip the force check to prevent recursion - just use the value we received
+                // forceCheckPremiumAccess();
+                
+                // Refresh the UI
+                refreshUI();
+                
+                // Force a repaint
+                revalidate();
+                repaint();
+            } finally {
+                isPremiumCheckInProgress = false;
+            }
+        });
+    }
+    
+    /**
+     * Force a fresh check of premium access status, bypassing any caching
+     */
+    private void forceCheckPremiumAccess() {
+        // Prevent recursive checks
+        if (isPremiumCheckInProgress) {
+            System.out.println("⚠️ Premium check already in progress in Audit, skipping force check");
+            return;
+        }
+        
+        isPremiumCheckInProgress = true;
+        try {
+            // Get the current user address from Authentication
+            String userAddress = null;
+            try {
+                if (AuthenticationEndpoint.getInstance() != null && 
+                    AuthenticationEndpoint.getInstance().getStatus("default") != null && 
+                    AuthenticationEndpoint.getInstance().getStatus("default").isAuthenticated()) {
+                    
+                    userAddress = AuthenticationEndpoint.getInstance().getStatus("default").getAccount();
+                }
+            } catch (Exception e) {
+                System.err.println("Error getting authenticated user: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
+            // Check premium access
+            if (userAddress != null && !userAddress.isEmpty()) {
+                System.out.println("Forcing premium access check for: " + userAddress);
+                
+                // Use direct contract check instead of refreshing through manager
+                hasPremiumAccess = premiumAccessManager.getBlockchainService().directContractCheck(userAddress);
+                System.out.println("Forced premium access check result: " + hasPremiumAccess);
+            } else {
+                hasPremiumAccess = false;
+                System.out.println("No authenticated user to check premium access");
+            }
+        } finally {
+            isPremiumCheckInProgress = false;
+        }
+    }
+    
+    /**
+     * Refresh the UI based on premium access status
+     */
+    private void refreshUI() {
+        SwingUtilities.invokeLater(() -> {
+            // Remove existing overlay if it exists
+            if (premiumOverlayPanel != null && premiumOverlayPanel.getParent() != null) {
+                remove(premiumOverlayPanel);
+            }
+            
+            // Add overlay if needed
+            if (!hasPremiumAccess) {
+                addPremiumOverlay();
+            }
+            
+            revalidate();
+            repaint();
+        });
     }
 }

@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
+import main.java.org.anynomous.utils.PremiumAccessManager;
+
 /**
  * A simple HTTP server to handle authentication status callbacks from MetaMask.
  */
@@ -39,6 +41,18 @@ public class AuthenticationEndpoint {
         public String getErrorReason() {
             return errorReason;
         }
+        
+        public void setAuthenticated(boolean authenticated) {
+            this.authenticated = authenticated;
+        }
+        
+        public void setAccount(String account) {
+            this.account = account;
+        }
+        
+        public void setErrorReason(String errorReason) {
+            this.errorReason = errorReason;
+        }
     }
     
     private AuthenticationEndpoint() throws IOException {
@@ -49,6 +63,12 @@ public class AuthenticationEndpoint {
         
         // Set up context for serving the share.html file
         server.createContext("/share.html", new StaticFileHandler("/web/share.html"));
+        
+        // Set up context for serving the premium purchase page
+        server.createContext("/premium-purchase.html", new StaticFileHandler("/web/premium-purchase.html"));
+        
+        // Set up context for premium purchase callback
+        server.createContext("/api/premium/callback", new PremiumPurchaseHandler());
         
         server.setExecutor(Executors.newFixedThreadPool(10));
         server.start();
@@ -67,6 +87,34 @@ public class AuthenticationEndpoint {
         return instance;
     }
     
+    /**
+     * Parse query parameters from a URL query string
+     */
+    private Map<String, String> parseQueryParams(String query) {
+        Map<String, String> params = new HashMap<>();
+        if (query != null && !query.isEmpty()) {
+            System.out.println("Parsing query parameters: " + query);
+            
+            for (String param : query.split("&")) {
+                String[] parts = param.split("=", 2);
+                if (parts.length == 2) {
+                    try {
+                        // URL decode the parameter values
+                        String key = java.net.URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
+                        String value = java.net.URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
+                        params.put(key, value);
+                        System.out.println("  Param: " + key + " = " + value);
+                    } catch (Exception e) {
+                        System.err.println("Error decoding parameter: " + param);
+                        // Fall back to non-decoded version
+                        params.put(parts[0], parts[1]);
+                    }
+                }
+            }
+        }
+        return params;
+    }
+    
     public AuthenticationStatus getStatus(String txId) {
         // We should only clear existing entries when explicitly requested,
         // not during normal status checks
@@ -79,6 +127,22 @@ public class AuthenticationEndpoint {
         authStatuses.remove(txId);
         // Create and return a new status object
         return authStatuses.computeIfAbsent(txId, k -> new AuthenticationStatus());
+    }
+    
+    /**
+     * Resets the authentication status for the specified transaction ID
+     * @param txId The transaction ID to reset
+     * @return The new empty authentication status
+     */
+    public AuthenticationStatus resetStatus(String txId) {
+        // Remove the existing status
+        authStatuses.remove(txId);
+        // Create a new status object (unauthenticated)
+        AuthenticationStatus newStatus = new AuthenticationStatus();
+        // Store it in the map
+        authStatuses.put(txId, newStatus);
+        System.out.println("Authentication status reset for txId: " + txId);
+        return newStatus;
     }
     
     public void shutdown() {
@@ -124,21 +188,21 @@ public class AuthenticationEndpoint {
                     
                     if ("authenticated".equals(status)) {
                         System.out.println("Setting authentication status to true for txId: " + txId);
-                        authStatus.authenticated = true;
+                        authStatus.setAuthenticated(true);
                         String account = params.getOrDefault("account", "");
-                        authStatus.account = account;
+                        authStatus.setAccount(account);
                         System.out.println("Account value set: " + account);
                         
                         // Ensure the modified status is properly stored in the map
                         authStatuses.put(txId, authStatus);
                         
                         // For debugging - print the complete status object
-                        System.out.println("Status object state after update: authenticated=" + authStatus.authenticated + 
-                                        ", account=" + authStatus.account + 
-                                        ", error=" + authStatus.errorReason);
+                        System.out.println("Status object state after update: authenticated=" + authStatus.isAuthenticated() + 
+                                        ", account=" + authStatus.getAccount() + 
+                                        ", error=" + authStatus.getErrorReason());
                     } else if ("failed".equals(status)) {
                         System.out.println("Setting authentication status to failed for txId: " + txId);
-                        authStatus.errorReason = params.getOrDefault("reason", "Unknown error");
+                        authStatus.setErrorReason(params.getOrDefault("reason", "Unknown error"));
                         
                         // Ensure the modified status is properly stored in the map
                         authStatuses.put(txId, authStatus);
@@ -155,31 +219,6 @@ public class AuthenticationEndpoint {
             } finally {
                 exchange.close();
             }
-        }
-        
-        private Map<String, String> parseQueryParams(String query) {
-            Map<String, String> params = new HashMap<>();
-            if (query != null && !query.isEmpty()) {
-                System.out.println("Parsing query parameters: " + query);
-                
-                for (String param : query.split("&")) {
-                    String[] parts = param.split("=", 2);
-                    if (parts.length == 2) {
-                        try {
-                            // URL decode the parameter values
-                            String key = java.net.URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
-                            String value = java.net.URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
-                            params.put(key, value);
-                            System.out.println("  Param: " + key + " = " + value);
-                        } catch (Exception e) {
-                            System.err.println("Error decoding parameter: " + param);
-                            // Fall back to non-decoded version
-                            params.put(parts[0], parts[1]);
-                        }
-                    }
-                }
-            }
-            return params;
         }
         
         private String createStatusResponse(AuthenticationStatus status) {
@@ -234,6 +273,62 @@ public class AuthenticationEndpoint {
                 return "text/css";
             } else {
                 return "application/octet-stream";
+            }
+        }
+    }
+    
+    /**
+     * Handler for premium purchase callbacks.
+     */
+    private class PremiumPurchaseHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            try {
+                System.out.println("Premium purchase callback received");
+                
+                // Get query parameters
+                String query = exchange.getRequestURI().getQuery();
+                Map<String, String> params = parseQueryParams(query);
+                
+                String account = params.getOrDefault("account", "");
+                
+                if (!account.isEmpty()) {
+                    System.out.println("Premium purchase callback received for account: " + account);
+                    
+                    // Refresh premium access status
+                    boolean updated = PremiumAccessManager.getInstance().refreshPremiumAccess(account);
+                    System.out.println("Premium access updated: " + updated + " for account: " + account);
+                    
+                    // Find all active sessions with this account and refresh them
+                    for (Map.Entry<String, AuthenticationStatus> entry : authStatuses.entrySet()) {
+                        String sessionId = entry.getKey();
+                        AuthenticationStatus status = entry.getValue();
+                        
+                        if (status != null && status.isAuthenticated()) {
+                            String sessionAccount = status.getAccount();
+                            if (sessionAccount != null && !sessionAccount.isEmpty() && 
+                                account.equalsIgnoreCase(sessionAccount)) {
+                                System.out.println("Refreshing premium status for session: " + sessionId + 
+                                                   " with account: " + sessionAccount);
+                                PremiumAccessManager.getInstance().refreshPremiumAccess(sessionAccount);
+                            }
+                        }
+                    }
+                    
+                    String response = "{\"status\":\"success\",\"premium\":\"" + updated + "\"}";
+                    sendResponse(exchange, response);
+                } else {
+                    System.err.println("Missing account parameter in premium purchase callback");
+                    String response = "{\"status\":\"error\",\"message\":\"Missing account parameter\"}";
+                    sendResponse(exchange, response, 400);
+                }
+            } catch (Exception e) {
+                System.err.println("Error in premium purchase handler: " + e.getMessage());
+                e.printStackTrace();
+                String errorResponse = "{\"status\":\"error\",\"message\":\"" + e.getMessage() + "\"}";
+                sendResponse(exchange, errorResponse, 500);
+            } finally {
+                exchange.close();
             }
         }
     }

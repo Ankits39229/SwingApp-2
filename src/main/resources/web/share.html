@@ -270,13 +270,31 @@
                 
                 return true;
             } catch (error) {
-                statusDiv.textContent = 'Error connecting to MetaMask: ' + error.message;
+                // Specific handling for user rejection (code 4001)
+                let errorMessage = error.message;
+                let errorCode = error.code;
+                
+                if (errorCode === 4001) {
+                    errorMessage = 'You rejected the connection request. You can continue using the app without premium features.';
+                    statusDiv.textContent = 'Connection request rejected.';
+                } else {
+                    statusDiv.textContent = 'Error connecting to MetaMask: ' + errorMessage;
+                }
+                
+                console.log('MetaMask connection error:', error);
                 connectBtn.innerHTML = 'Connect MetaMask';
                 connectBtn.disabled = false;
                 
                 // Notify Java application if this is an authentication request
                 if (isAuthentication && callbackUrl) {
-                    notifyJavaApp(callbackUrl, txId, "failed", error.message);
+                    notifyJavaApp(callbackUrl, txId, "failed", errorMessage);
+                }
+                
+                // Add a message to inform users they can still use the application
+                if (isAuthentication) {
+                    setTimeout(() => {
+                        statusDiv.textContent = 'You can close this window and return to the application.';
+                    }, 3000);
                 }
                 
                 return false;
