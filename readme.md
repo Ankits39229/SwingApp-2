@@ -131,7 +131,7 @@ java -jar target/swingapp-1.0-SNAPSHOT.jar
 ```
 
 ## 🏗️ Project Structure Explained
-```SWINGAPP/
+SWINGAPP/
 ├── src/ # Java source files
 │ └── main/
 │ └── java/
@@ -153,7 +153,6 @@ java -jar target/swingapp-1.0-SNAPSHOT.jar
 ├── Bat_Scripts/ # Windows batch utilities
 ├── pom.xml # Maven configuration
 └── requirements.txt # Python dependencies
-```
 
 ## 🔐 Security Features In-Depth
 
@@ -205,8 +204,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support & Contact
 
 - GitHub Issues: For bug reports and feature requests
-- Email: ankits39220@gmail.com
-- Documentation: [Here](https://github.com/Ankits39229/SwingApp-2/wiki)
+- Email: [your-email@domain.com]
+- Documentation: [Wiki link]
 
 ## 🔄 Updates & Maintenance
 
@@ -214,6 +213,49 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Quarterly feature releases
 - Monthly security patches
 - Continuous ML model improvements
+
+## Premium Features
+
+This application has premium features that require a purchase with Ethereum on the Sepolia testnet. Here's how to access them:
+
+### Getting Sepolia Test ETH
+
+1. Install the [MetaMask browser extension](https://metamask.io/download/)
+2. Create or import a wallet
+3. Switch to Sepolia Testnet
+4. Get free test ETH from a faucet:
+   - [Infura Sepolia Faucet](https://www.infura.io/faucet/sepolia)
+   - [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
+   - [QuickNode Faucet](https://faucet.quicknode.com/ethereum/sepolia)
+
+### Purchasing Premium Access
+
+1. Run the application
+2. Click the "Connect Wallet" button in the application
+3. Approve the MetaMask connection
+4. Try to access a premium feature (Audit or Malware sections)
+5. Click "Purchase Access" when prompted
+6. Complete the purchase for 0.01 Sepolia ETH
+7. Once confirmed, you'll have access to premium features
+
+For detailed instructions, see the [Premium Access Guide](docs/PremiumAccess.md).
+
+## Troubleshooting Premium Access
+
+If you've purchased premium access but can't access features:
+
+1. Ensure the transaction was successful on Sepolia Etherscan
+2. Restart the application
+3. Try connecting your wallet again
+
+## Features
+
+- Modern, dark-themed UI with FlatLaf
+- Real-time security monitoring
+- MetaMask authentication
+- Blockchain-based premium features
+- Comprehensive security audits
+- Advanced malware detection
 
 ---
 Built for Windows security
