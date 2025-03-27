@@ -39,14 +39,14 @@ public class SidebarMenu extends JPanel {
     private static final Map<String, String> ICON_URLS = new HashMap<>();
     static {
         // Free SVG icons from Bootstrap Icons
-        ICON_URLS.put("Home", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/house.svg");
-        ICON_URLS.put("Clean", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/trash.svg");
-        ICON_URLS.put("Troubleshoot", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/tools.svg");
-        ICON_URLS.put("Firewall", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/shield.svg");
-        ICON_URLS.put("Audit", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/clipboard-check.svg");
-        ICON_URLS.put("Remediate", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/bandaid.svg");
-        ICON_URLS.put("Malware", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/bug.svg");
-        ICON_URLS.put("Assistant", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/headset.svg");
+        ICON_URLS.put("Home", "house.svg");
+        ICON_URLS.put("Clean", "trash.svg");
+        ICON_URLS.put("Troubleshoot", "tools.svg");
+        ICON_URLS.put("Firewall", "shield.svg");
+        ICON_URLS.put("Audit", "clipboard-check.svg");
+        ICON_URLS.put("Remediate", "bandaid.svg");
+        ICON_URLS.put("Malware", "bug.svg");
+        ICON_URLS.put("Assistant", "headset.svg");
     }
     
     // Callback for when a menu item is selected

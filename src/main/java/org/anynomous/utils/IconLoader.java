@@ -11,7 +11,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,40 +18,44 @@ public class IconLoader {
     // Cache icons to avoid reloading
     private static final Map<String, ImageIcon> iconCache = new HashMap<>();
     
+    private static final String LOCAL_ICONS_PATH = "/icons/";
+    
     /**
-     * Load an icon from a URL (works with SVG, ICO, PNG, etc.)
+     * Load an icon from local resources (works with SVG, ICO, PNG, etc.)
      */
-    public static ImageIcon loadIcon(String url, int width, int height, Color colorFilter) {
-        String cacheKey = url + width + height + (colorFilter != null ? colorFilter.getRGB() : 0);
+    public static ImageIcon loadIcon(String iconName, int width, int height, Color colorFilter) {
+        String cacheKey = iconName + width + height + (colorFilter != null ? colorFilter.getRGB() : 0);
         if (iconCache.containsKey(cacheKey)) {
             return iconCache.get(cacheKey);
         }
         
         try {
-            if (url.toLowerCase().endsWith(".svg")) {
-                ImageIcon icon = loadSvgFromUrl(url, width, height);
-                if (colorFilter != null) {
-                    icon = applyColorFilter(icon, colorFilter);
-                }
-                iconCache.put(cacheKey, icon);
-                return icon;
-            } else {
-                // For other image types (ICO, PNG, etc.)
-                URL imageUrl = new URL(url);
-                BufferedImage originalImage = ImageIO.read(imageUrl);
-                if (originalImage != null) {
-                    BufferedImage resizedImage = resize(originalImage, width, height);
-                    ImageIcon icon = new ImageIcon(resizedImage);
+            String localPath = LOCAL_ICONS_PATH + iconName;
+            InputStream resourceStream = IconLoader.class.getResourceAsStream(localPath);
+            if (resourceStream != null) {
+                if (iconName.toLowerCase().endsWith(".svg")) {
+                    TranscoderInput input = new TranscoderInput(resourceStream);
+                    ImageIcon icon = loadSvgFromUrl(input, width, height);
                     if (colorFilter != null) {
                         icon = applyColorFilter(icon, colorFilter);
                     }
                     iconCache.put(cacheKey, icon);
                     return icon;
+                } else {
+                    BufferedImage originalImage = ImageIO.read(resourceStream);
+                    if (originalImage != null) {
+                        BufferedImage resizedImage = resize(originalImage, width, height);
+                        ImageIcon icon = new ImageIcon(resizedImage);
+                        if (colorFilter != null) {
+                            icon = applyColorFilter(icon, colorFilter);
+                        }
+                        iconCache.put(cacheKey, icon);
+                        return icon;
+                    }
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error loading icon from " + url + ": " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Failed to load local icon " + iconName + ": " + e.getMessage());
         }
         
         // Return a placeholder icon if loading fails
@@ -60,12 +63,9 @@ public class IconLoader {
     }
     
     /**
-     * Load an SVG file from a URL and convert to ImageIcon
+     * Load an SVG from a TranscoderInput
      */
-    private static ImageIcon loadSvgFromUrl(String url, int width, int height) throws IOException, TranscoderException {
-        URL svgUrl = new URL(url);
-        TranscoderInput input = new TranscoderInput(svgUrl.openStream());
-        
+    private static ImageIcon loadSvgFromUrl(TranscoderInput input, int width, int height) throws TranscoderException {
         // Create an image to store the SVG in
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
@@ -103,35 +103,32 @@ public class IconLoader {
         );
         
         Graphics2D g2d = image.createGraphics();
-        icon.paintIcon(null, g2d, 0, 0);
-        g2d.dispose();
+        g2d.drawImage(icon.getImage(), 0, 0, null);
         
         // Apply color filter
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                int rgb = image.getRGB(x, y);
-                int alpha = (rgb >> 24) & 0xFF;
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                int pixel = image.getRGB(x, y);
+                int alpha = (pixel >> 24) & 0xFF;
                 if (alpha > 0) {
-                    // Keep alpha but replace color
-                    int newRgb = (alpha << 24) | (color.getRed() << 16) | (color.getGreen() << 8) | color.getBlue();
-                    image.setRGB(x, y, newRgb);
+                    image.setRGB(x, y, (alpha << 24) | (color.getRGB() & 0x00FFFFFF));
                 }
             }
         }
         
+        g2d.dispose();
         return new ImageIcon(image);
     }
     
     /**
-     * Resize a BufferedImage to the specified dimensions
+     * Resize an image to the specified dimensions
      */
-    private static BufferedImage resize(BufferedImage original, int width, int height) {
-        BufferedImage resized = new BufferedImage(width, height, original.getType());
-        Graphics2D g2d = resized.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g2d.drawImage(original, 0, 0, width, height, null);
+    private static BufferedImage resize(BufferedImage originalImage, int width, int height) {
+        BufferedImage resizedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = resizedImage.createGraphics();
+        g2d.drawImage(originalImage, 0, 0, width, height, null);
         g2d.dispose();
-        return resized;
+        return resizedImage;
     }
     
     /**
@@ -140,16 +137,21 @@ public class IconLoader {
     private static ImageIcon createPlaceholderIcon(int width, int height, Color color) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
-        if (color == null) {
-            color = Color.GRAY;
-        }
+        // Set background
+        g2d.setColor(new Color(200, 200, 200, 50));
+        g2d.fillRect(0, 0, width, height);
         
-        g2d.setColor(color);
-        g2d.fillOval(2, 2, width - 4, height - 4);
+        // Draw placeholder shape
+        g2d.setColor(color != null ? color : Color.GRAY);
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(2, 2, width - 4, height - 4);
+        
+        // Draw X
+        g2d.drawLine(4, 4, width - 4, height - 4);
+        g2d.drawLine(4, height - 4, width - 4, 4);
+        
         g2d.dispose();
-        
         return new ImageIcon(image);
     }
 }

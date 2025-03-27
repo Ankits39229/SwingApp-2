@@ -13,7 +13,7 @@ import java.awt.LinearGradientPaint;
 
 public class Firewall extends JPanel {
 
-    private static final Color PRIMARY_DARK = new Color(18, 18, 18);
+    private static final Color PRIMARY_DARK = new Color(0, 0, 0);
     private static final Color ACCENT_COLOR = new Color(147, 51, 234);
     private static final Color SECONDARY_ACCENT = new Color(99, 102, 241);
     private static final Color TEXT_PRIMARY = new Color(243, 244, 246);
@@ -63,7 +63,7 @@ public class Firewall extends JPanel {
     private void createLayout() {
         // Header panel with title and metrics
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(HEADER_BACKGROUND);
+        headerPanel.setBackground(PRIMARY_DARK);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
         
         JLabel titleLabel = new JLabel("Network Security Dashboard");

@@ -27,6 +27,7 @@ import java.awt.geom.Point2D;
 import java.awt.BasicStroke;
 import java.awt.event.HierarchyEvent;
 import javax.swing.plaf.basic.BasicScrollBarUI;
+import main.java.org.anynomous.utils.IconLoader;
 
 
 public class Troubleshoot {
@@ -66,11 +67,9 @@ public class Troubleshoot {
     private final AudioTroubleshootingPanel AudioTroubleshootingPanel;
     private final BluetoothAndDeviceConnectivityPanel BluetoothAndDeviceConnectivityPanel;
     private final BrowserIssuesPanel BrowserIssuesPanel;
-    private final JSplitPane splitPane;
-//    private final JPanel[] sidePanels;
+    private final JPanel mainPanel;
 
     public Troubleshoot(JPanel... sidePanels) {
-//        this.sidePanels = sidePanels;
         this.SystemPerformancePanel = new SystemPerformancePanel();
         this.NetworkDiagnosticsPanel = new NetworkDiagnosticsPanel();
         this.DriversIssuesPanel = new DriversIssuesPanel();
@@ -81,18 +80,13 @@ public class Troubleshoot {
         this.BluetoothAndDeviceConnectivityPanel = new BluetoothAndDeviceConnectivityPanel();
         this.BrowserIssuesPanel = new BrowserIssuesPanel();
 
-        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(BACKGROUND_COLOR);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         JPanel headerPanel = this.createHeaderPanel();
         mainPanel.add(headerPanel, "North");
         JPanel gridPanel = this.createMainGridPanel();
         mainPanel.add(gridPanel, "Center");
-        this.splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, mainPanel, new JPanel());
-        this.splitPane.setDividerLocation(800);
-        this.splitPane.setOneTouchExpandable(true);
-        this.splitPane.setBackground(BACKGROUND_COLOR);
-        this.splitPane.setRightComponent(new JPanel());
     }
 
     private JPanel createHeaderPanel() {
@@ -134,13 +128,13 @@ public class Troubleshoot {
     public JPanel createItemPanel(String title, String description, int index) {
         // Get the category color for this panel
         final Color categoryColor = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+        final float[] pulseEffect = {0.0f};
         
         JPanel panel = new JPanel() {
             private float hoverAlpha = 0.0f;
             private Timer fadeTimer;
             private boolean isHovered = false;
             private boolean isPressed = false;
-            private float pulseEffect = 0.0f;
             private Timer pulseTimer;
             
             {
@@ -153,18 +147,13 @@ public class Troubleshoot {
                     @Override
                     public void mouseEntered(MouseEvent e) {
                         isHovered = true;
-                        startFadeAnimation(true);
-                        startPulseAnimation(true);
-                        setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        startFadeAnimation();
                     }
                     
                     @Override
                     public void mouseExited(MouseEvent e) {
                         isHovered = false;
-                        isPressed = false;
-                        startFadeAnimation(false);
-                        startPulseAnimation(false);
-                        setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                        startFadeAnimation();
                     }
                     
                     @Override
@@ -177,46 +166,38 @@ public class Troubleshoot {
                     public void mouseReleased(MouseEvent e) {
                         isPressed = false;
                         repaint();
-                        if (isHovered) {
-                            openSideBar(index);
-                        }
+                        openFullSizeWindow(index);
                     }
                 });
-            }
-            
-            private void startFadeAnimation(boolean fadeIn) {
-                if (fadeTimer != null && fadeTimer.isRunning()) {
-                    fadeTimer.stop();
-                }
                 
-                fadeTimer = new Timer(10, e -> {
-                    if (fadeIn) {
-                        hoverAlpha = Math.min(1.0f, hoverAlpha + 0.08f);
+                // Add hover effect animation
+                fadeTimer = new Timer(16, e -> {
+                    float targetAlpha = isHovered ? 1.0f : 0.0f;
+                    float alphaStep = 0.1f;
+                    
+                    if (Math.abs(hoverAlpha - targetAlpha) < alphaStep) {
+                        hoverAlpha = targetAlpha;
+                        fadeTimer.stop();
                     } else {
-                        hoverAlpha = Math.max(0.0f, hoverAlpha - 0.08f);
+                        hoverAlpha += (targetAlpha - hoverAlpha) * alphaStep;
                     }
                     
-                    if ((fadeIn && hoverAlpha >= 1.0f) || (!fadeIn && hoverAlpha <= 0.0f)) {
-                        fadeTimer.stop();
+                    repaint();
+                });
+                
+                // Add pulse animation timer
+                pulseTimer = new Timer(50, e -> {
+                    pulseEffect[0] += 0.1f;
+                    if (pulseEffect[0] > 2 * Math.PI) {
+                        pulseEffect[0] = 0;
                     }
                     repaint();
                 });
-                fadeTimer.start();
             }
             
-            private void startPulseAnimation(boolean start) {
-                if (pulseTimer != null && pulseTimer.isRunning()) {
-                    pulseTimer.stop();
-                }
-                
-                if (start) {
-                    pulseTimer = new Timer(30, e -> {
-                        pulseEffect += 0.1f;
-                        repaint();
-                    });
-                    pulseTimer.start();
-                } else {
-                    pulseEffect = 0.0f;
+            private void startFadeAnimation() {
+                if (!fadeTimer.isRunning()) {
+                    fadeTimer.start();
                 }
             }
             
@@ -250,7 +231,7 @@ public class Troubleshoot {
                     g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, 8, 8));
                     
                     // Animated border on hover
-                    float borderAlpha = hoverAlpha * (0.6f + 0.4f * (float)Math.sin(pulseEffect));
+                    float borderAlpha = hoverAlpha * (0.6f + 0.4f * (float)Math.sin(pulseEffect[0]));
                     g2d.setColor(new Color(
                         categoryColor.getRed(),
                         categoryColor.getGreen(),
@@ -287,8 +268,8 @@ public class Troubleshoot {
             
             {
                 setOpaque(false);
-                // Increase the panel size to accommodate larger icons
-                setPreferredSize(new Dimension(60, 60));
+                // Decrease the panel size for smaller icons
+                setPreferredSize(new Dimension(35, 35));
                 
                 // Add subtle pulse animation on hover
                 addMouseListener(new MouseAdapter() {
@@ -305,22 +286,22 @@ public class Troubleshoot {
             }
             
             private void startPulseAnimation() {
-                if (pulseTimer != null && pulseTimer.isRunning()) {
-                    return;
+                if (!pulsing) {
+                    pulsing = true;
+                    pulseTimer = new Timer(50, e -> {
+                        pulseScale = 1.0f + 0.1f * (float)Math.sin(pulseEffect[0]);
+                        repaint();
+                    });
+                    pulseTimer.start();
                 }
-                
-                pulsing = true;
-                pulseTimer = new Timer(50, e -> {
-                    pulseScale = 1.0f + 0.05f * (float)Math.sin(System.currentTimeMillis() / 200.0);
-                    repaint();
-                });
-                pulseTimer.start();
             }
             
             private void stopPulseAnimation() {
-                if (pulseTimer != null) {
-                    pulseTimer.stop();
+                if (pulsing) {
                     pulsing = false;
+                    if (pulseTimer != null) {
+                        pulseTimer.stop();
+                    }
                     pulseScale = 1.0f;
                     repaint();
                 }
@@ -328,44 +309,30 @@ public class Troubleshoot {
             
             @Override
             protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                 
-                // Center the icon
-                int centerX = getWidth() / 2;
-                int centerY = getHeight() / 2;
+                int width = getWidth();
+                int height = getHeight();
                 
-                // Increase circle size
-                int circleSize = pulsing ? (int)(48 * pulseScale) : 48;
-                g2d.setColor(new Color(15, 15, 15));
-                g2d.fillOval(centerX - circleSize/2, centerY - circleSize/2, circleSize, circleSize);
+                // Calculate center position
+                int centerX = width / 2;
+                int centerY = height / 2;
                 
-                // Draw subtle glow
+                // Load and draw the icon with smaller size
+                String iconName = getIconNameForIndex(index);
+                ImageIcon icon = IconLoader.loadIcon(iconName, 25, 25, categoryColor);
+                
+                // Apply pulse effect
                 if (pulsing) {
-                    int glowSize = circleSize + 12;
-                    RadialGradientPaint glow = new RadialGradientPaint(
-                        centerX, centerY, glowSize/2,
-                        new float[] {0.0f, 1.0f},
-                        new Color[] {
-                            new Color(categoryColor.getRed(), categoryColor.getGreen(), categoryColor.getBlue(), 40),
-                            new Color(categoryColor.getRed(), categoryColor.getGreen(), categoryColor.getBlue(), 0)
-                        }
-                    );
-                    g2d.setPaint(glow);
-                    g2d.fillOval(centerX - glowSize/2, centerY - glowSize/2, glowSize, glowSize);
+                    g2d.translate(centerX, centerY);
+                    g2d.scale(pulseScale, pulseScale);
+                    g2d.translate(-centerX, -centerY);
                 }
                 
-                // Draw the emoji with increased size
-                String emoji = getEmojiForIndex(index);
-                // Increase font size from 20 to 24
-                g2d.setFont(new Font("Segoe UI Emoji", Font.PLAIN, pulsing ? (int)(24 * pulseScale) : 24));
-                FontMetrics fm = g2d.getFontMetrics();
-                int emojiWidth = fm.stringWidth(emoji);
-                int emojiHeight = fm.getHeight();
-                g2d.setColor(categoryColor);
-                g2d.drawString(emoji, centerX - emojiWidth/2, centerY + emojiHeight/4);
+                // Draw the icon
+                icon.paintIcon(this, g2d, centerX - icon.getIconWidth()/2, centerY - icon.getIconHeight()/2);
                 
                 g2d.dispose();
             }
@@ -395,63 +362,122 @@ public class Troubleshoot {
         return panel;
     }
 
-    private String getEmojiForIndex(int index) {
+    private String getIconNameForIndex(int index) {
         return switch (index) {
-            case 0 -> "⚙️";
-            case 1 -> "🌐";
-            case 2 -> "🔧";
-            case 3 -> "🗂️";
-            case 4 -> "💻";
-            case 5 -> "🛠️";
-            case 6 -> "🔊";
-            case 7 -> "📶";
-            case 8 -> "🌐";
-            default -> "❓";
+            case 0 -> "cpu.svg";  // System Performance
+            case 1 -> "wifi.svg";  // Network Diagnostics
+            case 2 -> "driver.svg";  // Driver Issues
+            case 3 -> "folder.svg";  // File System Repair
+            case 4 -> "error.svg";  // Blue Screen Errors
+            case 5 -> "app.svg";  // App Compatibility
+            case 6 -> "speaker.svg";  // Audio Troubleshooting
+            case 7 -> "bluetooth.svg";  // Bluetooth & Devices
+            case 8 -> "browser.svg";  // Browser Issues
+            default -> "question.svg";
         };
     }
 
-    private void openSideBar(int index) {
+    private void openFullSizeWindow(int index) {
         JPanel selectedPanel = null;
+        String title = "";
+        
         switch (index) {
-            case 0 -> selectedPanel = this.SystemPerformancePanel;
-            case 1 -> selectedPanel = this.NetworkDiagnosticsPanel;
-            case 2 -> selectedPanel = this.DriversIssuesPanel;
-            case 3 -> selectedPanel = this.FileSystemRepairPanel;
-            case 4 -> selectedPanel = this.BlueScreenErrorPanel;
-            case 5 -> selectedPanel = this.ApplicationCompatibilityIssuesPanel;
-            case 6 -> selectedPanel = this.AudioTroubleshootingPanel;
-            case 7 -> selectedPanel = this.BluetoothAndDeviceConnectivityPanel;
-            case 8 -> selectedPanel = this.BrowserIssuesPanel;
+            case 0 -> {
+                selectedPanel = this.SystemPerformancePanel;
+                title = "System Performance";
+            }
+            case 1 -> {
+                selectedPanel = this.NetworkDiagnosticsPanel;
+                title = "Network Diagnostics";
+            }
+            case 2 -> {
+                selectedPanel = this.DriversIssuesPanel;
+                title = "Driver Issues";
+            }
+            case 3 -> {
+                selectedPanel = this.FileSystemRepairPanel;
+                title = "File System Repair";
+            }
+            case 4 -> {
+                selectedPanel = this.BlueScreenErrorPanel;
+                title = "Blue Screen Error";
+            }
+            case 5 -> {
+                selectedPanel = this.ApplicationCompatibilityIssuesPanel;
+                title = "Application Compatibility Issues";
+            }
+            case 6 -> {
+                selectedPanel = this.AudioTroubleshootingPanel;
+                title = "Audio & Sound";
+            }
+            case 7 -> {
+                selectedPanel = this.BluetoothAndDeviceConnectivityPanel;
+                title = "Bluetooth and Device Connectivity";
+            }
+            case 8 -> {
+                selectedPanel = this.BrowserIssuesPanel;
+                title = "Browser Issues";
+            }
         }
 
         if (selectedPanel != null) {
-            this.splitPane.setRightComponent(selectedPanel);
-        } else {
-            JPanel placeholder = new JPanel(new BorderLayout());
-            placeholder.setBackground(PANEL_BACKGROUND);
-            JLabel noInfoLabel = new JLabel("No Information Available");
-            noInfoLabel.setForeground(TEXT_COLOR);
-            noInfoLabel.setHorizontalAlignment(0);
-            placeholder.add(noInfoLabel, "Center");
-            this.splitPane.setRightComponent(placeholder);
+            // Create a container panel with a back button
+            JPanel containerPanel = new JPanel(new BorderLayout());
+            containerPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Create header panel with back button
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(new Color(5, 5, 5));
+            headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+            
+            JButton backButton = new JButton("← Back");
+            backButton.setForeground(TEXT_COLOR);
+            backButton.setBackground(new Color(30, 30, 30));
+            backButton.setBorderPainted(false);
+            backButton.setFocusPainted(false);
+            backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            backButton.addActionListener(e -> {
+                // Restore the original content
+                mainPanel.removeAll();
+                mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
+                mainPanel.add(createMainGridPanel(), BorderLayout.CENTER);
+                mainPanel.revalidate();
+                mainPanel.repaint();
+            });
+            
+            JLabel titleLabel = new JLabel(title);
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            
+            headerPanel.add(backButton, BorderLayout.WEST);
+            headerPanel.add(titleLabel, BorderLayout.CENTER);
+            
+            containerPanel.add(headerPanel, BorderLayout.NORTH);
+            containerPanel.add(selectedPanel, BorderLayout.CENTER);
+            
+            // Replace the current content with the new panel
+            mainPanel.removeAll();
+            mainPanel.add(containerPanel, BorderLayout.CENTER);
+            mainPanel.revalidate();
+            mainPanel.repaint();
         }
-
-        this.splitPane.setDividerLocation(this.splitPane.getWidth() - 300);
-        this.splitPane.revalidate();
-        this.splitPane.repaint();
     }
 
-    public JSplitPane getSplitPane() {
-        return this.splitPane;
+    public JPanel getMainPanel() {
+        return this.mainPanel;
     }
 
     private JPanel createPlaceholderPanel(String message) {
         JPanel placeholder = new JPanel(new BorderLayout());
         placeholder.setBackground(PANEL_BACKGROUND);
-        JLabel noInfoLabel = new JLabel(message);
+        placeholder.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        JLabel noInfoLabel = new JLabel("<html><div style='text-align: center;'>" + message + "</div></html>");
         noInfoLabel.setForeground(TEXT_COLOR);
-        noInfoLabel.setHorizontalAlignment(0);
-        placeholder.add(noInfoLabel, "Center");
+        noInfoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        noInfoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        placeholder.add(noInfoLabel, BorderLayout.CENTER);
         return placeholder;
     }
 
@@ -770,6 +796,12 @@ public class Troubleshoot {
 
 
     public static class NetworkDiagnosticsPanel extends BaseSidebarPanel {
+        private static final Color BUTTON_COLOR = new Color(25, 25, 25);
+        private static final Color BUTTON_HOVER_COLOR = new Color(35, 35, 35);
+        private static final Color BUTTON_ACCENT = new Color(65, 105, 225, 150); // Royal Blue
+        private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 13);
+        private static final Font STATUS_FONT = new Font("Segoe UI", Font.PLAIN, 12);
+        private static final int CORNER_RADIUS = 4;
 
         public NetworkDiagnosticsPanel() {
             super("Network Diagnostics");
@@ -778,118 +810,661 @@ public class Troubleshoot {
         protected JPanel createContentPanel() {
             JPanel contentPanel = new JPanel(new BorderLayout(0, 20));
             contentPanel.setBackground(PANEL_BACKGROUND);
-            contentPanel.add(this.createScanSection(), BorderLayout.CENTER);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create main container with card layout
+            JPanel mainContainer = new JPanel(new CardLayout(0, 0));
+            mainContainer.setBackground(PANEL_BACKGROUND);
+            
+            // Create the main menu panel
+            JPanel menuPanel = createMenuPanel(mainContainer);
+            
+            // Create result panels
+            JPanel pingResultPanel = createResultPanel("Ping Test Results", "ping");
+            JPanel speedResultPanel = createResultPanel("Speed Test Results", "speed");
+            
+            // Add all panels to the card layout
+            mainContainer.add(menuPanel, "menu");
+            mainContainer.add(pingResultPanel, "ping");
+            mainContainer.add(speedResultPanel, "speed");
+            
+            contentPanel.add(mainContainer, BorderLayout.CENTER);
             return contentPanel;
         }
 
-        private JPanel createScanSection() {
-            JPanel scanPanel = new JPanel(new BorderLayout(0, 10));
-            scanPanel.setBackground(PANEL_BACKGROUND);
-
-            JButton scanButton = new JButton("Check");
-            scanButton.setPreferredSize(new Dimension(200, 40));
-            scanButton.setBackground(BUTTON_COLOR);
-            scanButton.setForeground(Color.WHITE);
-            scanButton.setFocusPainted(false);
-            scanButton.setBorderPainted(false);
-            scanButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-            // Create a scrollable output area
-            JTextArea outputArea = new JTextArea(10, 30); // Adjust rows and columns as needed
+        private JPanel createMenuPanel(JPanel mainContainer) {
+            JPanel menuPanel = new JPanel();
+            menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+            menuPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Add title
+            JLabel titleLabel = new JLabel("Network Diagnostics Tools");
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            // Add description
+            JLabel descLabel = new JLabel("<html><div style='text-align: center; width: 300px;'>Select a diagnostic tool to check your network connectivity and performance</div></html>");
+            descLabel.setForeground(SECONDARY_TEXT_COLOR);
+            descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            menuPanel.add(Box.createVerticalStrut(20));
+            menuPanel.add(titleLabel);
+            menuPanel.add(Box.createVerticalStrut(10));
+            menuPanel.add(descLabel);
+            menuPanel.add(Box.createVerticalStrut(30));
+            
+            // Create and add the first button
+            JButton pingButton = createStyledButton("Ping Test", "Test network connectivity", "ping");
+            pingButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "ping");
+            });
+            
+            menuPanel.add(pingButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the second button
+            JButton speedTestButton = createStyledButton("Speed Test", "Check internet speed", "speed");
+            speedTestButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "speed");
+            });
+            
+            menuPanel.add(speedTestButton);
+            menuPanel.add(Box.createVerticalGlue());
+            
+            return menuPanel;
+        }
+        
+        private JPanel createResultPanel(String title, String type) {
+            JPanel resultPanel = new JPanel(new BorderLayout(0, 10));
+            resultPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Create header with back button
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(new Color(5, 5, 5));
+            headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+            
+            JButton backButton = new JButton("← Back");
+            backButton.setForeground(TEXT_COLOR);
+            backButton.setBackground(new Color(30, 30, 30));
+            backButton.setBorderPainted(false);
+            backButton.setFocusPainted(false);
+            backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            JLabel titleLabel = new JLabel(title);
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            
+            headerPanel.add(backButton, BorderLayout.WEST);
+            headerPanel.add(titleLabel, BorderLayout.CENTER);
+            
+            // Create content panel
+            JPanel contentPanel = new JPanel(new BorderLayout(0, 10));
+            contentPanel.setBackground(PANEL_BACKGROUND);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create output area
+            JTextArea outputArea = new JTextArea();
             outputArea.setEditable(false);
-            outputArea.setBackground(PANEL_BACKGROUND);
-            outputArea.setForeground(SECONDARY_TEXT_COLOR);
-            outputArea.setWrapStyleWord(true);
+            outputArea.setBackground(new Color(5, 5, 5));
+            outputArea.setForeground(TEXT_COLOR);
+            outputArea.setFont(STATUS_FONT);
             outputArea.setLineWrap(true);
+            outputArea.setWrapStyleWord(true);
 
             JScrollPane scrollPane = new JScrollPane(outputArea);
-            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
-            JLabel statusLabel = new JLabel("Ready to scan");
-            statusLabel.setForeground(SECONDARY_TEXT_COLOR);
-            statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-            scanButton.addActionListener((ActionEvent e) -> {
-                scanButton.setText("Scanning...");
-                statusLabel.setText("Scan in progress...");
-                outputArea.setText(""); // Clear the output area before starting a new scan
-
-                // Create a SwingWorker to run the batch file in a background thread
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            scrollPane.setBackground(PANEL_BACKGROUND);
+            
+            // Create control panel
+            JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+            controlPanel.setBackground(PANEL_BACKGROUND);
+            
+            JButton startButton = createStyledButton("Start Test", "Start the network test", type);
+            startButton.addActionListener(e -> {
+                startButton.setText("Running...");
+                startButton.setEnabled(false);
+                outputArea.setText("");
+                
                 SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
                     @Override
                     protected Void doInBackground() throws Exception {
                         try {
-                            // Using a relative path to the .bat file
-                            String batFilePath = "Bat_Scripts/Network.bat"; // Relative path to the .bat file
+                            String batFilePath = type.equals("ping") ? 
+                                "Bat_Scripts/Network.bat" : 
+                                "Bat_Scripts/SpeedTest.bat";
 
-                            // Create the full path to the .bat file based on the current directory
                             File batFile = new File(batFilePath);
                             if (!batFile.exists()) {
                                 publish("Error: Batch file not found.");
                                 return null;
                             }
 
-                            // Run the .bat file using cmd.exe
                             ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", batFile.getAbsolutePath());
-                            processBuilder.redirectErrorStream(true);  // Combine output and error streams
+                            processBuilder.redirectErrorStream(true);
                             Process process = processBuilder.start();
 
-                            // Get the output of the process and send it to the text area
                             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                publish(line); // Publish the real-time output to the process
+                                publish(line);
                             }
 
-                            process.waitFor(); // Wait for the batch file to finish
+                            process.waitFor();
                         } catch (Exception ex) {
                             ex.printStackTrace();
-                            publish("Error: Couldn't complete scan.");
+                            publish("Error: Couldn't complete test.");
                         }
                         return null;
                     }
 
-                    // This method is called whenever a message is published in the background thread
                     @Override
                     protected void process(java.util.List<String> chunks) {
                         for (String chunk : chunks) {
-                            outputArea.append(chunk + "\n"); // Update the text area with real-time output
+                            outputArea.append(chunk + "\n");
+                            // Auto-scroll to bottom
+                            outputArea.setCaretPosition(outputArea.getDocument().getLength());
                         }
                     }
 
                     @Override
                     protected void done() {
-                        try {
-                            // Update status and button text when the scan is complete
-                            scanButton.setText("Check");
-                            statusLabel.setText("Scan Complete.");
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                            statusLabel.setText("Error: Couldn't complete scan.");
-                        }
+                        startButton.setText("Start Test");
+                        startButton.setEnabled(true);
                     }
                 };
-
-                // Start the worker thread
                 worker.execute();
             });
 
-            scanPanel.add(scanButton, BorderLayout.NORTH);
-            scanPanel.add(scrollPane, BorderLayout.CENTER);
-            scanPanel.add(statusLabel, BorderLayout.SOUTH);
-
-            return scanPanel;
+            controlPanel.add(startButton);
+            
+            // Add components to the result panel
+            resultPanel.add(headerPanel, BorderLayout.NORTH);
+            resultPanel.add(contentPanel, BorderLayout.CENTER);
+            contentPanel.add(scrollPane, BorderLayout.CENTER);
+            contentPanel.add(controlPanel, BorderLayout.SOUTH);
+            
+            // Add back button action
+            backButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) resultPanel.getParent().getLayout();
+                cl.show(resultPanel.getParent(), "menu");
+            });
+            
+            return resultPanel;
+        }
+        
+        private JButton createStyledButton(String text, String tooltip, String type) {
+            return new JButton(text) {
+                private boolean isHovered = false;
+                private boolean isPressed = false;
+                private float pulseEffect = 0.0f;
+                private Timer pulseTimer;
+                
+                {
+                    setContentAreaFilled(false);
+                    setBorderPainted(false);
+                    setFocusPainted(false);
+                    setFont(BUTTON_FONT);
+                    setForeground(Color.WHITE);
+                    setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    setPreferredSize(new Dimension(200, 45));
+                    setToolTipText(tooltip);
+                    
+                    addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseEntered(MouseEvent e) {
+                            isHovered = true;
+                            startPulseAnimation(true);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseExited(MouseEvent e) {
+                            isHovered = false;
+                            isPressed = false;
+                            startPulseAnimation(false);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mousePressed(MouseEvent e) {
+                            isPressed = true;
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            isPressed = false;
+                            repaint();
+                        }
+                    });
+                }
+                
+                private void startPulseAnimation(boolean start) {
+                    if (pulseTimer != null && pulseTimer.isRunning()) {
+                        pulseTimer.stop();
+                    }
+                    
+                    if (start) {
+                        pulseTimer = new Timer(30, e -> {
+                            pulseEffect += 0.1f;
+                            repaint();
+                        });
+                        pulseTimer.start();
+                    } else {
+                        pulseEffect = 0.0f;
+                    }
+                }
+                
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    int width = getWidth();
+                    int height = getHeight();
+                    
+                    // Draw button background
+                    g2d.setColor(isPressed ? BUTTON_HOVER_COLOR : (isHovered ? BUTTON_HOVER_COLOR : BUTTON_COLOR));
+                    g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                    
+                    // Draw subtle accent on hover
+                    if (isHovered) {
+                        // Subtle color accent
+                        Color accentColor = new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            isPressed ? 60 : 40
+                        );
+                        g2d.setColor(accentColor);
+                        g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                        
+                        // Animated border
+                        float borderAlpha = 0.6f + 0.4f * (float)Math.sin(pulseEffect);
+                        g2d.setColor(new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            (int)(100 * borderAlpha)
+                        ));
+                        g2d.setStroke(new BasicStroke(1.5f));
+                        g2d.draw(new RoundRectangle2D.Float(0, 0, width-1, height-1, CORNER_RADIUS, CORNER_RADIUS));
+                    }
+                    
+                    // Apply press effect
+                    if (isPressed) {
+                        g2d.translate(1, 1);
+                    }
+                    
+                    // Draw text
+                    g2d.setFont(getFont());
+                    FontMetrics fm = g2d.getFontMetrics();
+                    String text = getText();
+                    int textWidth = fm.stringWidth(text);
+                    int textHeight = fm.getHeight();
+                    int textX = (width - textWidth) / 2;
+                    int textY = (height - textHeight) / 2 + fm.getAscent();
+                    
+                    // Draw text shadow
+                    g2d.setColor(new Color(0, 0, 0, 100));
+                    g2d.drawString(text, textX + 1, textY + 1);
+                    
+                    // Draw text
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawString(text, textX, textY);
+                    
+                    g2d.dispose();
+                }
+            };
         }
     }
 
 
+
     class DriversIssuesPanel extends BaseSidebarPanel {
+        private static final Color BUTTON_COLOR = new Color(25, 25, 25);
+        private static final Color BUTTON_HOVER_COLOR = new Color(35, 35, 35);
+        private static final Color BUTTON_ACCENT = new Color(46, 139, 87, 150); // Sea Green
+        private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 13);
+        private static final Font STATUS_FONT = new Font("Segoe UI", Font.PLAIN, 12);
+        private static final int CORNER_RADIUS = 4;
+
         public DriversIssuesPanel() {
             super("Driver Issues");
         }
 
         protected JPanel createContentPanel() {
-            return Troubleshoot.this.createPlaceholderPanel("Manage your user accounts and security settings.");
+            JPanel contentPanel = new JPanel(new BorderLayout(0, 20));
+            contentPanel.setBackground(PANEL_BACKGROUND);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create main container with card layout
+            JPanel mainContainer = new JPanel(new CardLayout(0, 0));
+            mainContainer.setBackground(PANEL_BACKGROUND);
+            
+            // Create the main menu panel
+            JPanel menuPanel = createMenuPanel(mainContainer);
+            
+            // Create result panels
+            JPanel scanResultPanel = createResultPanel("Driver Scan Results", "scan");
+            JPanel updateResultPanel = createResultPanel("Driver Update Results", "update");
+            JPanel rollbackResultPanel = createResultPanel("Driver Rollback Results", "rollback");
+            
+            // Add all panels to the card layout
+            mainContainer.add(menuPanel, "menu");
+            mainContainer.add(scanResultPanel, "scan");
+            mainContainer.add(updateResultPanel, "update");
+            mainContainer.add(rollbackResultPanel, "rollback");
+            
+            contentPanel.add(mainContainer, BorderLayout.CENTER);
+            return contentPanel;
+        }
+        
+        private JPanel createMenuPanel(JPanel mainContainer) {
+            JPanel menuPanel = new JPanel();
+            menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+            menuPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Add title
+            JLabel titleLabel = new JLabel("Driver Management Tools");
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            // Add description
+            JLabel descLabel = new JLabel("<html><div style='text-align: center; width: 300px;'>Select a tool to scan, update, or rollback your system drivers</div></html>");
+            descLabel.setForeground(SECONDARY_TEXT_COLOR);
+            descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            menuPanel.add(Box.createVerticalStrut(20));
+            menuPanel.add(titleLabel);
+            menuPanel.add(Box.createVerticalStrut(10));
+            menuPanel.add(descLabel);
+            menuPanel.add(Box.createVerticalStrut(30));
+            
+            // Create and add the scan button
+            JButton scanButton = createStyledButton("Scan Drivers", "Scan for driver issues", "scan");
+            scanButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "scan");
+            });
+            
+            menuPanel.add(scanButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the update button
+            JButton updateButton = createStyledButton("Update Drivers", "Update system drivers", "update");
+            updateButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "update");
+            });
+            
+            menuPanel.add(updateButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the rollback button
+            JButton rollbackButton = createStyledButton("Rollback Drivers", "Rollback to previous driver versions", "rollback");
+            rollbackButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "rollback");
+            });
+            
+            menuPanel.add(rollbackButton);
+            menuPanel.add(Box.createVerticalGlue());
+            
+            return menuPanel;
+        }
+        
+        private JPanel createResultPanel(String title, String type) {
+            JPanel resultPanel = new JPanel(new BorderLayout(0, 10));
+            resultPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Create header with back button
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(new Color(5, 5, 5));
+            headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+            
+            JButton backButton = new JButton("← Back");
+            backButton.setForeground(TEXT_COLOR);
+            backButton.setBackground(new Color(30, 30, 30));
+            backButton.setBorderPainted(false);
+            backButton.setFocusPainted(false);
+            backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            JLabel titleLabel = new JLabel(title);
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            
+            headerPanel.add(backButton, BorderLayout.WEST);
+            headerPanel.add(titleLabel, BorderLayout.CENTER);
+            
+            // Create content panel
+            JPanel contentPanel = new JPanel(new BorderLayout(0, 10));
+            contentPanel.setBackground(PANEL_BACKGROUND);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create output area
+            JTextArea outputArea = new JTextArea();
+            outputArea.setEditable(false);
+            outputArea.setBackground(new Color(5, 5, 5));
+            outputArea.setForeground(TEXT_COLOR);
+            outputArea.setFont(STATUS_FONT);
+            outputArea.setLineWrap(true);
+            outputArea.setWrapStyleWord(true);
+
+            JScrollPane scrollPane = new JScrollPane(outputArea);
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            scrollPane.setBackground(PANEL_BACKGROUND);
+            
+            // Create control panel
+            JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+            controlPanel.setBackground(PANEL_BACKGROUND);
+            
+            JButton startButton = createStyledButton("Start Operation", "Start the driver operation", type);
+            startButton.addActionListener(e -> {
+                startButton.setText("Running...");
+                startButton.setEnabled(false);
+                outputArea.setText("");
+                
+                SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
+                    @Override
+                    protected Void doInBackground() throws Exception {
+                        try {
+                            String batFilePath = switch (type) {
+                                case "scan" -> "Bat_Scripts/DriverScan.bat";
+                                case "update" -> "Bat_Scripts/DriverUpdate.bat";
+                                case "rollback" -> "Bat_Scripts/DriverRollback.bat";
+                                default -> throw new IllegalArgumentException("Invalid operation type");
+                            };
+
+                            File batFile = new File(batFilePath);
+                            if (!batFile.exists()) {
+                                publish("Error: Batch file not found.");
+                                return null;
+                            }
+
+                            ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", batFile.getAbsolutePath());
+                            processBuilder.redirectErrorStream(true);
+                            Process process = processBuilder.start();
+
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                publish(line);
+                            }
+
+                            process.waitFor();
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            publish("Error: Couldn't complete operation.");
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    protected void process(java.util.List<String> chunks) {
+                        for (String chunk : chunks) {
+                            outputArea.append(chunk + "\n");
+                            // Auto-scroll to bottom
+                            outputArea.setCaretPosition(outputArea.getDocument().getLength());
+                        }
+                    }
+
+                    @Override
+                    protected void done() {
+                        startButton.setText("Start Operation");
+                        startButton.setEnabled(true);
+                    }
+                };
+                worker.execute();
+            });
+
+            controlPanel.add(startButton);
+            
+            // Add components to the result panel
+            resultPanel.add(headerPanel, BorderLayout.NORTH);
+            resultPanel.add(contentPanel, BorderLayout.CENTER);
+            contentPanel.add(scrollPane, BorderLayout.CENTER);
+            contentPanel.add(controlPanel, BorderLayout.SOUTH);
+            
+            // Add back button action
+            backButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) resultPanel.getParent().getLayout();
+                cl.show(resultPanel.getParent(), "menu");
+            });
+            
+            return resultPanel;
+        }
+        
+        private JButton createStyledButton(String text, String tooltip, String type) {
+            return new JButton(text) {
+                private boolean isHovered = false;
+                private boolean isPressed = false;
+                private float pulseEffect = 0.0f;
+                private Timer pulseTimer;
+                
+                {
+                    setContentAreaFilled(false);
+                    setBorderPainted(false);
+                    setFocusPainted(false);
+                    setFont(BUTTON_FONT);
+                    setForeground(Color.WHITE);
+                    setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    setPreferredSize(new Dimension(200, 45));
+                    setToolTipText(tooltip);
+                    
+                    addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseEntered(MouseEvent e) {
+                            isHovered = true;
+                            startPulseAnimation(true);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseExited(MouseEvent e) {
+                            isHovered = false;
+                            isPressed = false;
+                            startPulseAnimation(false);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mousePressed(MouseEvent e) {
+                            isPressed = true;
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            isPressed = false;
+                            repaint();
+                        }
+                    });
+                }
+                
+                private void startPulseAnimation(boolean start) {
+                    if (pulseTimer != null && pulseTimer.isRunning()) {
+                        pulseTimer.stop();
+                    }
+                    
+                    if (start) {
+                        pulseTimer = new Timer(30, e -> {
+                            pulseEffect += 0.1f;
+                            repaint();
+                        });
+                        pulseTimer.start();
+                    } else {
+                        pulseEffect = 0.0f;
+                    }
+                }
+                
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    int width = getWidth();
+                    int height = getHeight();
+                    
+                    // Draw button background
+                    g2d.setColor(isPressed ? BUTTON_HOVER_COLOR : (isHovered ? BUTTON_HOVER_COLOR : BUTTON_COLOR));
+                    g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                    
+                    // Draw subtle accent on hover
+                    if (isHovered) {
+                        // Subtle color accent
+                        Color accentColor = new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            isPressed ? 60 : 40
+                        );
+                        g2d.setColor(accentColor);
+                        g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                        
+                        // Animated border
+                        float borderAlpha = 0.6f + 0.4f * (float)Math.sin(pulseEffect);
+                        g2d.setColor(new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            (int)(100 * borderAlpha)
+                        ));
+                        g2d.setStroke(new BasicStroke(1.5f));
+                        g2d.draw(new RoundRectangle2D.Float(0, 0, width-1, height-1, CORNER_RADIUS, CORNER_RADIUS));
+                    }
+                    
+                    // Apply press effect
+                    if (isPressed) {
+                        g2d.translate(1, 1);
+                    }
+                    
+                    // Draw text
+                    g2d.setFont(getFont());
+                    FontMetrics fm = g2d.getFontMetrics();
+                    String text = getText();
+                    int textWidth = fm.stringWidth(text);
+                    int textHeight = fm.getHeight();
+                    int textX = (width - textWidth) / 2;
+                    int textY = (height - textHeight) / 2 + fm.getAscent();
+                    
+                    // Draw text shadow
+                    g2d.setColor(new Color(0, 0, 0, 100));
+                    g2d.drawString(text, textX + 1, textY + 1);
+                    
+                    // Draw text
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawString(text, textX, textY);
+                    
+                    g2d.dispose();
+                }
+            };
         }
     }
 
@@ -1132,7 +1707,7 @@ public class Troubleshoot {
         }
 
         protected JPanel createContentPanel() {
-            return Troubleshoot.this.createPlaceholderPanel("Monitor the performance and health of your device.");
+            return Troubleshoot.this.createPlaceholderPanel("Application compatibility troubleshooting features will be available in a future update.");
         }
     }
 
@@ -1140,115 +1715,332 @@ public class Troubleshoot {
 
 
     public static class AudioTroubleshootingPanel extends BaseSidebarPanel {
+        private static final Color BUTTON_COLOR = new Color(25, 25, 25);
+        private static final Color BUTTON_HOVER_COLOR = new Color(35, 35, 35);
+        private static final Color BUTTON_ACCENT = new Color(72, 61, 139, 150); // Dark Slate Blue
+        private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 13);
+        private static final Font STATUS_FONT = new Font("Segoe UI", Font.PLAIN, 12);
+        private static final int CORNER_RADIUS = 4;
 
-        public AudioTroubleshootingPanel (){
+        public AudioTroubleshootingPanel() {
             super("Audio & Sound");
         }
 
         protected JPanel createContentPanel() {
             JPanel contentPanel = new JPanel(new BorderLayout(0, 20));
             contentPanel.setBackground(PANEL_BACKGROUND);
-            contentPanel.add(this.createScanSection(), BorderLayout.CENTER);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create main container with card layout
+            JPanel mainContainer = new JPanel(new CardLayout(0, 0));
+            mainContainer.setBackground(PANEL_BACKGROUND);
+            
+            // Create the main menu panel
+            JPanel menuPanel = createMenuPanel(mainContainer);
+            
+            // Create result panels
+            JPanel audioScanResultPanel = createResultPanel("Audio Device Scan Results", "scan");
+            JPanel audioFixResultPanel = createResultPanel("Audio Fix Results", "fix");
+            
+            // Add all panels to the card layout
+            mainContainer.add(menuPanel, "menu");
+            mainContainer.add(audioScanResultPanel, "scan");
+            mainContainer.add(audioFixResultPanel, "fix");
+            
+            contentPanel.add(mainContainer, BorderLayout.CENTER);
             return contentPanel;
         }
 
-        private JPanel createScanSection() {
-            JPanel scanPanel = new JPanel(new BorderLayout(0, 10));
-            scanPanel.setBackground(PANEL_BACKGROUND);
-
-            JButton scanButton = new JButton("Check");
-            scanButton.setPreferredSize(new Dimension(200, 40));
-            scanButton.setBackground(BUTTON_COLOR);
-            scanButton.setForeground(Color.WHITE);
-            scanButton.setFocusPainted(false);
-            scanButton.setBorderPainted(false);
-            scanButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-            // Create a scrollable output area
-            JTextArea outputArea = new JTextArea(10, 30); // Adjust rows and columns as needed
+        private JPanel createMenuPanel(JPanel mainContainer) {
+            JPanel menuPanel = new JPanel();
+            menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+            menuPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Add title
+            JLabel titleLabel = new JLabel("Audio Troubleshooting Tools");
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            // Add description
+            JLabel descLabel = new JLabel("<html><div style='text-align: center; width: 300px;'>Select a tool to scan audio devices or fix common audio issues</div></html>");
+            descLabel.setForeground(SECONDARY_TEXT_COLOR);
+            descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            menuPanel.add(Box.createVerticalStrut(20));
+            menuPanel.add(titleLabel);
+            menuPanel.add(Box.createVerticalStrut(10));
+            menuPanel.add(descLabel);
+            menuPanel.add(Box.createVerticalStrut(30));
+            
+            // Create and add the scan button
+            JButton scanButton = createStyledButton("Scan Audio Devices", "Scan for audio device issues", "scan");
+            scanButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "scan");
+            });
+            
+            menuPanel.add(scanButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the fix button
+            JButton fixButton = createStyledButton("Fix Audio Issues", "Fix common audio problems", "fix");
+            fixButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "fix");
+            });
+            
+            menuPanel.add(fixButton);
+            menuPanel.add(Box.createVerticalGlue());
+            
+            return menuPanel;
+        }
+        
+        private JPanel createResultPanel(String title, String type) {
+            JPanel resultPanel = new JPanel(new BorderLayout(0, 10));
+            resultPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Create header with back button
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(new Color(5, 5, 5));
+            headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+            
+            JButton backButton = new JButton("← Back");
+            backButton.setForeground(TEXT_COLOR);
+            backButton.setBackground(new Color(30, 30, 30));
+            backButton.setBorderPainted(false);
+            backButton.setFocusPainted(false);
+            backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            JLabel titleLabel = new JLabel(title);
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            
+            headerPanel.add(backButton, BorderLayout.WEST);
+            headerPanel.add(titleLabel, BorderLayout.CENTER);
+            
+            // Create content panel
+            JPanel contentPanel = new JPanel(new BorderLayout(0, 10));
+            contentPanel.setBackground(PANEL_BACKGROUND);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create output area
+            JTextArea outputArea = new JTextArea();
             outputArea.setEditable(false);
-            outputArea.setBackground(PANEL_BACKGROUND);
-            outputArea.setForeground(SECONDARY_TEXT_COLOR);
-            outputArea.setWrapStyleWord(true);
+            outputArea.setBackground(new Color(5, 5, 5));
+            outputArea.setForeground(TEXT_COLOR);
+            outputArea.setFont(STATUS_FONT);
             outputArea.setLineWrap(true);
+            outputArea.setWrapStyleWord(true);
 
             JScrollPane scrollPane = new JScrollPane(outputArea);
-            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
-            JLabel statusLabel = new JLabel("Ready to scan");
-            statusLabel.setForeground(SECONDARY_TEXT_COLOR);
-            statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-            scanButton.addActionListener((ActionEvent e) -> {
-                scanButton.setText("Scanning...");
-                statusLabel.setText("Scan in progress...");
-                outputArea.setText(""); // Clear the output area before starting a new scan
-
-                // Create a SwingWorker to run the batch file in a background thread
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            scrollPane.setBackground(PANEL_BACKGROUND);
+            
+            // Create control panel
+            JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+            controlPanel.setBackground(PANEL_BACKGROUND);
+            
+            JButton startButton = createStyledButton("Start Operation", "Start the audio operation", type);
+            startButton.addActionListener(e -> {
+                startButton.setText("Running...");
+                startButton.setEnabled(false);
+                outputArea.setText("");
+                
                 SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
                     @Override
                     protected Void doInBackground() throws Exception {
                         try {
-                            // Using a relative path to the .bat file
-                            String batFilePath = "Bat_Scripts/Audio.bat"; // Relative path to the .bat file
+                            String batFilePath = switch (type) {
+                                case "scan" -> "Bat_Scripts/AudioScan.bat";
+                                case "fix" -> "Bat_Scripts/AudioFix.bat";
+                                default -> throw new IllegalArgumentException("Invalid operation type");
+                            };
 
-                            // Create the full path to the .bat file based on the current directory
                             File batFile = new File(batFilePath);
                             if (!batFile.exists()) {
                                 publish("Error: Batch file not found.");
                                 return null;
                             }
 
-                            // Run the .bat file using cmd.exe
                             ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", batFile.getAbsolutePath());
-                            processBuilder.redirectErrorStream(true);  // Combine output and error streams
+                            processBuilder.redirectErrorStream(true);
                             Process process = processBuilder.start();
 
-                            // Get the output of the process and send it to the text area
                             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                publish(line); // Publish the real-time output to the process
+                                publish(line);
                             }
 
-                            process.waitFor(); // Wait for the batch file to finish
+                            process.waitFor();
                         } catch (Exception ex) {
                             ex.printStackTrace();
-                            publish("Error: Couldn't complete scan.");
+                            publish("Error: Couldn't complete operation.");
                         }
                         return null;
                     }
 
-                    // This method is called whenever a message is published in the background thread
                     @Override
                     protected void process(java.util.List<String> chunks) {
                         for (String chunk : chunks) {
-                            outputArea.append(chunk + "\n"); // Update the text area with real-time output
+                            outputArea.append(chunk + "\n");
+                            // Auto-scroll to bottom
+                            outputArea.setCaretPosition(outputArea.getDocument().getLength());
                         }
                     }
 
                     @Override
                     protected void done() {
-                        try {
-                            // Update status and button text when the scan is complete
-                            scanButton.setText("Check");
-                            statusLabel.setText("Scan Complete.");
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                            statusLabel.setText("Error: Couldn't complete scan.");
-                        }
+                        startButton.setText("Start Operation");
+                        startButton.setEnabled(true);
                     }
                 };
-
-                // Start the worker thread
                 worker.execute();
             });
 
-            scanPanel.add(scanButton, BorderLayout.NORTH);
-            scanPanel.add(scrollPane, BorderLayout.CENTER);
-            scanPanel.add(statusLabel, BorderLayout.SOUTH);
-
-            return scanPanel;
+            controlPanel.add(startButton);
+            
+            // Add components to the result panel
+            resultPanel.add(headerPanel, BorderLayout.NORTH);
+            resultPanel.add(contentPanel, BorderLayout.CENTER);
+            contentPanel.add(scrollPane, BorderLayout.CENTER);
+            contentPanel.add(controlPanel, BorderLayout.SOUTH);
+            
+            // Add back button action
+            backButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) resultPanel.getParent().getLayout();
+                cl.show(resultPanel.getParent(), "menu");
+            });
+            
+            return resultPanel;
+        }
+        
+        private JButton createStyledButton(String text, String tooltip, String type) {
+            return new JButton(text) {
+                private boolean isHovered = false;
+                private boolean isPressed = false;
+                private float pulseEffect = 0.0f;
+                private Timer pulseTimer;
+                
+                {
+                    setContentAreaFilled(false);
+                    setBorderPainted(false);
+                    setFocusPainted(false);
+                    setFont(BUTTON_FONT);
+                    setForeground(Color.WHITE);
+                    setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    setPreferredSize(new Dimension(200, 45));
+                    setToolTipText(tooltip);
+                    
+                    addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseEntered(MouseEvent e) {
+                            isHovered = true;
+                            startPulseAnimation(true);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseExited(MouseEvent e) {
+                            isHovered = false;
+                            isPressed = false;
+                            startPulseAnimation(false);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mousePressed(MouseEvent e) {
+                            isPressed = true;
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            isPressed = false;
+                            repaint();
+                        }
+                    });
+                }
+                
+                private void startPulseAnimation(boolean start) {
+                    if (pulseTimer != null && pulseTimer.isRunning()) {
+                        pulseTimer.stop();
+                    }
+                    
+                    if (start) {
+                        pulseTimer = new Timer(30, e -> {
+                            pulseEffect += 0.1f;
+                            repaint();
+                        });
+                        pulseTimer.start();
+                    } else {
+                        pulseEffect = 0.0f;
+                    }
+                }
+                
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    int width = getWidth();
+                    int height = getHeight();
+                    
+                    // Draw button background
+                    g2d.setColor(isPressed ? BUTTON_HOVER_COLOR : (isHovered ? BUTTON_HOVER_COLOR : BUTTON_COLOR));
+                    g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                    
+                    // Draw subtle accent on hover
+                    if (isHovered) {
+                        // Subtle color accent
+                        Color accentColor = new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            isPressed ? 60 : 40
+                        );
+                        g2d.setColor(accentColor);
+                        g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                        
+                        // Animated border
+                        float borderAlpha = 0.6f + 0.4f * (float)Math.sin(pulseEffect);
+                        g2d.setColor(new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            (int)(100 * borderAlpha)
+                        ));
+                        g2d.setStroke(new BasicStroke(1.5f));
+                        g2d.draw(new RoundRectangle2D.Float(0, 0, width-1, height-1, CORNER_RADIUS, CORNER_RADIUS));
+                    }
+                    
+                    // Apply press effect
+                    if (isPressed) {
+                        g2d.translate(1, 1);
+                    }
+                    
+                    // Draw text
+                    g2d.setFont(getFont());
+                    FontMetrics fm = g2d.getFontMetrics();
+                    String text = getText();
+                    int textWidth = fm.stringWidth(text);
+                    int textHeight = fm.getHeight();
+                    int textX = (width - textWidth) / 2;
+                    int textY = (height - textHeight) / 2 + fm.getAscent();
+                    
+                    // Draw text shadow
+                    g2d.setColor(new Color(0, 0, 0, 100));
+                    g2d.drawString(text, textX + 1, textY + 1);
+                    
+                    // Draw text
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawString(text, textX, textY);
+                    
+                    g2d.dispose();
+                }
+            };
         }
     }
 
@@ -1256,115 +2048,345 @@ public class Troubleshoot {
 
 
     public static class BluetoothAndDeviceConnectivityPanel extends BaseSidebarPanel {
+        private static final Color BUTTON_COLOR = new Color(25, 25, 25);
+        private static final Color BUTTON_HOVER_COLOR = new Color(35, 35, 35);
+        private static final Color BUTTON_ACCENT = new Color(0, 139, 139, 150); // Dark Cyan
+        private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 13);
+        private static final Font STATUS_FONT = new Font("Segoe UI", Font.PLAIN, 12);
+        private static final int CORNER_RADIUS = 4;
 
-        public BluetoothAndDeviceConnectivityPanel (){
+        public BluetoothAndDeviceConnectivityPanel() {
             super("Bluetooth and Device Connectivity");
         }
 
         protected JPanel createContentPanel() {
             JPanel contentPanel = new JPanel(new BorderLayout(0, 20));
             contentPanel.setBackground(PANEL_BACKGROUND);
-            contentPanel.add(this.createScanSection(), BorderLayout.CENTER);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create main container with card layout
+            JPanel mainContainer = new JPanel(new CardLayout(0, 0));
+            mainContainer.setBackground(PANEL_BACKGROUND);
+            
+            // Create the main menu panel
+            JPanel menuPanel = createMenuPanel(mainContainer);
+            
+            // Create result panels
+            JPanel scanResultPanel = createResultPanel("Device Scan Results", "scan");
+            JPanel bluetoothResultPanel = createResultPanel("Bluetooth Troubleshooting Results", "bluetooth");
+            JPanel deviceResultPanel = createResultPanel("Device Management Results", "device");
+            
+            // Add all panels to the card layout
+            mainContainer.add(menuPanel, "menu");
+            mainContainer.add(scanResultPanel, "scan");
+            mainContainer.add(bluetoothResultPanel, "bluetooth");
+            mainContainer.add(deviceResultPanel, "device");
+            
+            contentPanel.add(mainContainer, BorderLayout.CENTER);
             return contentPanel;
         }
 
-        private JPanel createScanSection() {
-            JPanel scanPanel = new JPanel(new BorderLayout(0, 10));
-            scanPanel.setBackground(PANEL_BACKGROUND);
-
-            JButton scanButton = new JButton("Check");
-            scanButton.setPreferredSize(new Dimension(200, 40));
-            scanButton.setBackground(BUTTON_COLOR);
-            scanButton.setForeground(Color.WHITE);
-            scanButton.setFocusPainted(false);
-            scanButton.setBorderPainted(false);
-            scanButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-            // Create a scrollable output area
-            JTextArea outputArea = new JTextArea(10, 30); // Adjust rows and columns as needed
+        private JPanel createMenuPanel(JPanel mainContainer) {
+            JPanel menuPanel = new JPanel();
+            menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+            menuPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Add title
+            JLabel titleLabel = new JLabel("Device Management Tools");
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            // Add description
+            JLabel descLabel = new JLabel("<html><div style='text-align: center; width: 300px;'>Select a tool to scan devices, troubleshoot Bluetooth, or manage device connections</div></html>");
+            descLabel.setForeground(SECONDARY_TEXT_COLOR);
+            descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            menuPanel.add(Box.createVerticalStrut(20));
+            menuPanel.add(titleLabel);
+            menuPanel.add(Box.createVerticalStrut(10));
+            menuPanel.add(descLabel);
+            menuPanel.add(Box.createVerticalStrut(30));
+            
+            // Create and add the scan button
+            JButton scanButton = createStyledButton("Scan Devices", "Scan for connected devices", "scan");
+            scanButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "scan");
+            });
+            
+            menuPanel.add(scanButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the Bluetooth button
+            JButton bluetoothButton = createStyledButton("Bluetooth Troubleshooting", "Fix Bluetooth connectivity issues", "bluetooth");
+            bluetoothButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "bluetooth");
+            });
+            
+            menuPanel.add(bluetoothButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the device management button
+            JButton deviceButton = createStyledButton("Device Management", "Manage device connections and settings", "device");
+            deviceButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "device");
+            });
+            
+            menuPanel.add(deviceButton);
+            menuPanel.add(Box.createVerticalGlue());
+            
+            return menuPanel;
+        }
+        
+        private JPanel createResultPanel(String title, String type) {
+            JPanel resultPanel = new JPanel(new BorderLayout(0, 10));
+            resultPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Create header with back button
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(new Color(5, 5, 5));
+            headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+            
+            JButton backButton = new JButton("← Back");
+            backButton.setForeground(TEXT_COLOR);
+            backButton.setBackground(new Color(30, 30, 30));
+            backButton.setBorderPainted(false);
+            backButton.setFocusPainted(false);
+            backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            JLabel titleLabel = new JLabel(title);
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            
+            headerPanel.add(backButton, BorderLayout.WEST);
+            headerPanel.add(titleLabel, BorderLayout.CENTER);
+            
+            // Create content panel
+            JPanel contentPanel = new JPanel(new BorderLayout(0, 10));
+            contentPanel.setBackground(PANEL_BACKGROUND);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create output area
+            JTextArea outputArea = new JTextArea();
             outputArea.setEditable(false);
-            outputArea.setBackground(PANEL_BACKGROUND);
-            outputArea.setForeground(SECONDARY_TEXT_COLOR);
-            outputArea.setWrapStyleWord(true);
+            outputArea.setBackground(new Color(5, 5, 5));
+            outputArea.setForeground(TEXT_COLOR);
+            outputArea.setFont(STATUS_FONT);
             outputArea.setLineWrap(true);
+            outputArea.setWrapStyleWord(true);
 
             JScrollPane scrollPane = new JScrollPane(outputArea);
-            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
-            JLabel statusLabel = new JLabel("Ready to scan");
-            statusLabel.setForeground(SECONDARY_TEXT_COLOR);
-            statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-            scanButton.addActionListener((ActionEvent e) -> {
-                scanButton.setText("Scanning...");
-                statusLabel.setText("Scan in progress...");
-                outputArea.setText(""); // Clear the output area before starting a new scan
-
-                // Create a SwingWorker to run the batch file in a background thread
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            scrollPane.setBackground(PANEL_BACKGROUND);
+            
+            // Create control panel
+            JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+            controlPanel.setBackground(PANEL_BACKGROUND);
+            
+            JButton startButton = createStyledButton("Start Operation", "Start the device operation", type);
+            startButton.addActionListener(e -> {
+                startButton.setText("Running...");
+                startButton.setEnabled(false);
+                outputArea.setText("");
+                
                 SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
                     @Override
                     protected Void doInBackground() throws Exception {
                         try {
-                            // Using a relative path to the .bat file
-                            String batFilePath = "Bat_Scripts/Bluetooth.bat"; // Relative path to the .bat file
+                            String batFilePath = switch (type) {
+                                case "scan" -> "Bat_Scripts/DeviceScan.bat";
+                                case "bluetooth" -> "Bat_Scripts/Bluetooth.bat";
+                                case "device" -> "Bat_Scripts/DeviceManage.bat";
+                                default -> throw new IllegalArgumentException("Invalid operation type");
+                            };
 
-                            // Create the full path to the .bat file based on the current directory
                             File batFile = new File(batFilePath);
                             if (!batFile.exists()) {
                                 publish("Error: Batch file not found.");
                                 return null;
                             }
 
-                            // Run the .bat file using cmd.exe
                             ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", batFile.getAbsolutePath());
-                            processBuilder.redirectErrorStream(true);  // Combine output and error streams
+                            processBuilder.redirectErrorStream(true);
                             Process process = processBuilder.start();
 
-                            // Get the output of the process and send it to the text area
                             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                publish(line); // Publish the real-time output to the process
+                                publish(line);
                             }
 
-                            process.waitFor(); // Wait for the batch file to finish
+                            process.waitFor();
                         } catch (Exception ex) {
                             ex.printStackTrace();
-                            publish("Error: Couldn't complete scan.");
+                            publish("Error: Couldn't complete operation.");
                         }
                         return null;
                     }
 
-                    // This method is called whenever a message is published in the background thread
                     @Override
                     protected void process(java.util.List<String> chunks) {
                         for (String chunk : chunks) {
-                            outputArea.append(chunk + "\n"); // Update the text area with real-time output
+                            outputArea.append(chunk + "\n");
+                            // Auto-scroll to bottom
+                            outputArea.setCaretPosition(outputArea.getDocument().getLength());
                         }
                     }
 
                     @Override
                     protected void done() {
-                        try {
-                            // Update status and button text when the scan is complete
-                            scanButton.setText("Check");
-                            statusLabel.setText("Scan Complete.");
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                            statusLabel.setText("Error: Couldn't complete scan.");
-                        }
+                        startButton.setText("Start Operation");
+                        startButton.setEnabled(true);
                     }
                 };
-
-                // Start the worker thread
                 worker.execute();
             });
 
-            scanPanel.add(scanButton, BorderLayout.NORTH);
-            scanPanel.add(scrollPane, BorderLayout.CENTER);
-            scanPanel.add(statusLabel, BorderLayout.SOUTH);
-
-            return scanPanel;
+            controlPanel.add(startButton);
+            
+            // Add components to the result panel
+            resultPanel.add(headerPanel, BorderLayout.NORTH);
+            resultPanel.add(contentPanel, BorderLayout.CENTER);
+            contentPanel.add(scrollPane, BorderLayout.CENTER);
+            contentPanel.add(controlPanel, BorderLayout.SOUTH);
+            
+            // Add back button action
+            backButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) resultPanel.getParent().getLayout();
+                cl.show(resultPanel.getParent(), "menu");
+            });
+            
+            return resultPanel;
+        }
+        
+        private JButton createStyledButton(String text, String tooltip, String type) {
+            return new JButton(text) {
+                private boolean isHovered = false;
+                private boolean isPressed = false;
+                private float pulseEffect = 0.0f;
+                private Timer pulseTimer;
+                
+                {
+                    setContentAreaFilled(false);
+                    setBorderPainted(false);
+                    setFocusPainted(false);
+                    setFont(BUTTON_FONT);
+                    setForeground(Color.WHITE);
+                    setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    setPreferredSize(new Dimension(200, 45));
+                    setToolTipText(tooltip);
+                    
+                    addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseEntered(MouseEvent e) {
+                            isHovered = true;
+                            startPulseAnimation(true);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseExited(MouseEvent e) {
+                            isHovered = false;
+                            isPressed = false;
+                            startPulseAnimation(false);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mousePressed(MouseEvent e) {
+                            isPressed = true;
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            isPressed = false;
+                            repaint();
+                        }
+                    });
+                }
+                
+                private void startPulseAnimation(boolean start) {
+                    if (pulseTimer != null && pulseTimer.isRunning()) {
+                        pulseTimer.stop();
+                    }
+                    
+                    if (start) {
+                        pulseTimer = new Timer(30, e -> {
+                            pulseEffect += 0.1f;
+                            repaint();
+                        });
+                        pulseTimer.start();
+                    } else {
+                        pulseEffect = 0.0f;
+                    }
+                }
+                
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    int width = getWidth();
+                    int height = getHeight();
+                    
+                    // Draw button background
+                    g2d.setColor(isPressed ? BUTTON_HOVER_COLOR : (isHovered ? BUTTON_HOVER_COLOR : BUTTON_COLOR));
+                    g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                    
+                    // Draw subtle accent on hover
+                    if (isHovered) {
+                        // Subtle color accent
+                        Color accentColor = new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            isPressed ? 60 : 40
+                        );
+                        g2d.setColor(accentColor);
+                        g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                        
+                        // Animated border
+                        float borderAlpha = 0.6f + 0.4f * (float)Math.sin(pulseEffect);
+                        g2d.setColor(new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            (int)(100 * borderAlpha)
+                        ));
+                        g2d.setStroke(new BasicStroke(1.5f));
+                        g2d.draw(new RoundRectangle2D.Float(0, 0, width-1, height-1, CORNER_RADIUS, CORNER_RADIUS));
+                    }
+                    
+                    // Apply press effect
+                    if (isPressed) {
+                        g2d.translate(1, 1);
+                    }
+                    
+                    // Draw text
+                    g2d.setFont(getFont());
+                    FontMetrics fm = g2d.getFontMetrics();
+                    String text = getText();
+                    int textWidth = fm.stringWidth(text);
+                    int textHeight = fm.getHeight();
+                    int textX = (width - textWidth) / 2;
+                    int textY = (height - textHeight) / 2 + fm.getAscent();
+                    
+                    // Draw text shadow
+                    g2d.setColor(new Color(0, 0, 0, 100));
+                    g2d.drawString(text, textX + 1, textY + 1);
+                    
+                    // Draw text
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawString(text, textX, textY);
+                    
+                    g2d.dispose();
+                }
+            };
         }
     }
 
@@ -1372,115 +2394,358 @@ public class Troubleshoot {
 
 
     public static class BrowserIssuesPanel extends BaseSidebarPanel {
+        private static final Color BUTTON_COLOR = new Color(25, 25, 25);
+        private static final Color BUTTON_HOVER_COLOR = new Color(35, 35, 35);
+        private static final Color BUTTON_ACCENT = new Color(184, 134, 11, 150); // Dark Goldenrod
+        private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 13);
+        private static final Font STATUS_FONT = new Font("Segoe UI", Font.PLAIN, 12);
+        private static final int CORNER_RADIUS = 4;
 
-        public BrowserIssuesPanel (){
-            super("Browser");
+        public BrowserIssuesPanel() {
+            super("Browser Issues");
         }
 
         protected JPanel createContentPanel() {
             JPanel contentPanel = new JPanel(new BorderLayout(0, 20));
             contentPanel.setBackground(PANEL_BACKGROUND);
-            contentPanel.add(this.createScanSection(), BorderLayout.CENTER);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create main container with card layout
+            JPanel mainContainer = new JPanel(new CardLayout(0, 0));
+            mainContainer.setBackground(PANEL_BACKGROUND);
+            
+            // Create the main menu panel
+            JPanel menuPanel = createMenuPanel(mainContainer);
+            
+            // Create result panels
+            JPanel scanResultPanel = createResultPanel("Browser Scan Results", "scan");
+            JPanel cacheResultPanel = createResultPanel("Cache Cleanup Results", "cache");
+            JPanel extensionResultPanel = createResultPanel("Extension Management Results", "extension");
+            JPanel settingsResultPanel = createResultPanel("Browser Settings Results", "settings");
+            
+            // Add all panels to the card layout
+            mainContainer.add(menuPanel, "menu");
+            mainContainer.add(scanResultPanel, "scan");
+            mainContainer.add(cacheResultPanel, "cache");
+            mainContainer.add(extensionResultPanel, "extension");
+            mainContainer.add(settingsResultPanel, "settings");
+            
+            contentPanel.add(mainContainer, BorderLayout.CENTER);
             return contentPanel;
         }
 
-        private JPanel createScanSection() {
-            JPanel scanPanel = new JPanel(new BorderLayout(0, 10));
-            scanPanel.setBackground(PANEL_BACKGROUND);
-
-            JButton scanButton = new JButton("Check");
-            scanButton.setPreferredSize(new Dimension(200, 40));
-            scanButton.setBackground(BUTTON_COLOR);
-            scanButton.setForeground(Color.WHITE);
-            scanButton.setFocusPainted(false);
-            scanButton.setBorderPainted(false);
-            scanButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-            // Create a scrollable output area
-            JTextArea outputArea = new JTextArea(10, 30); // Adjust rows and columns as needed
+        private JPanel createMenuPanel(JPanel mainContainer) {
+            JPanel menuPanel = new JPanel();
+            menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+            menuPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Add title
+            JLabel titleLabel = new JLabel("Browser Troubleshooting Tools");
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            // Add description
+            JLabel descLabel = new JLabel("<html><div style='text-align: center; width: 300px;'>Select a tool to scan browser issues, clean cache, manage extensions, or reset settings</div></html>");
+            descLabel.setForeground(SECONDARY_TEXT_COLOR);
+            descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            menuPanel.add(Box.createVerticalStrut(20));
+            menuPanel.add(titleLabel);
+            menuPanel.add(Box.createVerticalStrut(10));
+            menuPanel.add(descLabel);
+            menuPanel.add(Box.createVerticalStrut(30));
+            
+            // Create and add the scan button
+            JButton scanButton = createStyledButton("Scan Browser Issues", "Scan for browser problems", "scan");
+            scanButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "scan");
+            });
+            
+            menuPanel.add(scanButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the cache cleanup button
+            JButton cacheButton = createStyledButton("Clean Browser Cache", "Clear browser cache and temporary files", "cache");
+            cacheButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "cache");
+            });
+            
+            menuPanel.add(cacheButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the extension management button
+            JButton extensionButton = createStyledButton("Manage Extensions", "Check and manage browser extensions", "extension");
+            extensionButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "extension");
+            });
+            
+            menuPanel.add(extensionButton);
+            menuPanel.add(Box.createVerticalStrut(15));
+            
+            // Create and add the settings button
+            JButton settingsButton = createStyledButton("Reset Browser Settings", "Reset browser to default settings", "settings");
+            settingsButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) mainContainer.getLayout();
+                cl.show(mainContainer, "settings");
+            });
+            
+            menuPanel.add(settingsButton);
+            menuPanel.add(Box.createVerticalGlue());
+            
+            return menuPanel;
+        }
+        
+        private JPanel createResultPanel(String title, String type) {
+            JPanel resultPanel = new JPanel(new BorderLayout(0, 10));
+            resultPanel.setBackground(PANEL_BACKGROUND);
+            
+            // Create header with back button
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(new Color(5, 5, 5));
+            headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+            
+            JButton backButton = new JButton("← Back");
+            backButton.setForeground(TEXT_COLOR);
+            backButton.setBackground(new Color(30, 30, 30));
+            backButton.setBorderPainted(false);
+            backButton.setFocusPainted(false);
+            backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            JLabel titleLabel = new JLabel(title);
+            titleLabel.setForeground(TEXT_COLOR);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            
+            headerPanel.add(backButton, BorderLayout.WEST);
+            headerPanel.add(titleLabel, BorderLayout.CENTER);
+            
+            // Create content panel
+            JPanel contentPanel = new JPanel(new BorderLayout(0, 10));
+            contentPanel.setBackground(PANEL_BACKGROUND);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            // Create output area
+            JTextArea outputArea = new JTextArea();
             outputArea.setEditable(false);
-            outputArea.setBackground(PANEL_BACKGROUND);
-            outputArea.setForeground(SECONDARY_TEXT_COLOR);
-            outputArea.setWrapStyleWord(true);
+            outputArea.setBackground(new Color(5, 5, 5));
+            outputArea.setForeground(TEXT_COLOR);
+            outputArea.setFont(STATUS_FONT);
             outputArea.setLineWrap(true);
+            outputArea.setWrapStyleWord(true);
 
             JScrollPane scrollPane = new JScrollPane(outputArea);
-            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
-            JLabel statusLabel = new JLabel("Ready to scan");
-            statusLabel.setForeground(SECONDARY_TEXT_COLOR);
-            statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-            scanButton.addActionListener((ActionEvent e) -> {
-                scanButton.setText("Scanning...");
-                statusLabel.setText("Scan in progress...");
-                outputArea.setText(""); // Clear the output area before starting a new scan
-
-                // Create a SwingWorker to run the batch file in a background thread
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            scrollPane.setBackground(PANEL_BACKGROUND);
+            
+            // Create control panel
+            JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+            controlPanel.setBackground(PANEL_BACKGROUND);
+            
+            JButton startButton = createStyledButton("Start Operation", "Start the browser operation", type);
+            startButton.addActionListener(e -> {
+                startButton.setText("Running...");
+                startButton.setEnabled(false);
+                outputArea.setText("");
+                
                 SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
                     @Override
                     protected Void doInBackground() throws Exception {
                         try {
-                            // Using a relative path to the .bat file
-                            String batFilePath = "Bat_Scripts/Browser.bat"; // Relative path to the .bat file
+                            String batFilePath = switch (type) {
+                                case "scan" -> "Bat_Scripts/BrowserScan.bat";
+                                case "cache" -> "Bat_Scripts/BrowserCache.bat";
+                                case "extension" -> "Bat_Scripts/BrowserExtension.bat";
+                                case "settings" -> "Bat_Scripts/BrowserSettings.bat";
+                                default -> throw new IllegalArgumentException("Invalid operation type");
+                            };
 
-                            // Create the full path to the .bat file based on the current directory
                             File batFile = new File(batFilePath);
                             if (!batFile.exists()) {
                                 publish("Error: Batch file not found.");
                                 return null;
                             }
 
-                            // Run the .bat file using cmd.exe
                             ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", batFile.getAbsolutePath());
-                            processBuilder.redirectErrorStream(true);  // Combine output and error streams
+                            processBuilder.redirectErrorStream(true);
                             Process process = processBuilder.start();
 
-                            // Get the output of the process and send it to the text area
                             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                publish(line); // Publish the real-time output to the process
+                                publish(line);
                             }
 
-                            process.waitFor(); // Wait for the batch file to finish
+                            process.waitFor();
                         } catch (Exception ex) {
                             ex.printStackTrace();
-                            publish("Error: Couldn't complete scan.");
+                            publish("Error: Couldn't complete operation.");
                         }
                         return null;
                     }
 
-                    // This method is called whenever a message is published in the background thread
                     @Override
                     protected void process(java.util.List<String> chunks) {
                         for (String chunk : chunks) {
-                            outputArea.append(chunk + "\n"); // Update the text area with real-time output
+                            outputArea.append(chunk + "\n");
+                            // Auto-scroll to bottom
+                            outputArea.setCaretPosition(outputArea.getDocument().getLength());
                         }
                     }
 
                     @Override
                     protected void done() {
-                        try {
-                            // Update status and button text when the scan is complete
-                            scanButton.setText("Check");
-                            statusLabel.setText("Scan Complete.");
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                            statusLabel.setText("Error: Couldn't complete scan.");
-                        }
+                        startButton.setText("Start Operation");
+                        startButton.setEnabled(true);
                     }
                 };
-
-                // Start the worker thread
                 worker.execute();
             });
 
-            scanPanel.add(scanButton, BorderLayout.NORTH);
-            scanPanel.add(scrollPane, BorderLayout.CENTER);
-            scanPanel.add(statusLabel, BorderLayout.SOUTH);
-
-            return scanPanel;
+            controlPanel.add(startButton);
+            
+            // Add components to the result panel
+            resultPanel.add(headerPanel, BorderLayout.NORTH);
+            resultPanel.add(contentPanel, BorderLayout.CENTER);
+            contentPanel.add(scrollPane, BorderLayout.CENTER);
+            contentPanel.add(controlPanel, BorderLayout.SOUTH);
+            
+            // Add back button action
+            backButton.addActionListener(e -> {
+                CardLayout cl = (CardLayout) resultPanel.getParent().getLayout();
+                cl.show(resultPanel.getParent(), "menu");
+            });
+            
+            return resultPanel;
+        }
+        
+        private JButton createStyledButton(String text, String tooltip, String type) {
+            return new JButton(text) {
+                private boolean isHovered = false;
+                private boolean isPressed = false;
+                private float pulseEffect = 0.0f;
+                private Timer pulseTimer;
+                
+                {
+                    setContentAreaFilled(false);
+                    setBorderPainted(false);
+                    setFocusPainted(false);
+                    setFont(BUTTON_FONT);
+                    setForeground(Color.WHITE);
+                    setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    setPreferredSize(new Dimension(200, 45));
+                    setToolTipText(tooltip);
+                    
+                    addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseEntered(MouseEvent e) {
+                            isHovered = true;
+                            startPulseAnimation(true);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseExited(MouseEvent e) {
+                            isHovered = false;
+                            isPressed = false;
+                            startPulseAnimation(false);
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mousePressed(MouseEvent e) {
+                            isPressed = true;
+                            repaint();
+                        }
+                        
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            isPressed = false;
+                            repaint();
+                        }
+                    });
+                }
+                
+                private void startPulseAnimation(boolean start) {
+                    if (pulseTimer != null && pulseTimer.isRunning()) {
+                        pulseTimer.stop();
+                    }
+                    
+                    if (start) {
+                        pulseTimer = new Timer(30, e -> {
+                            pulseEffect += 0.1f;
+                            repaint();
+                        });
+                        pulseTimer.start();
+                    } else {
+                        pulseEffect = 0.0f;
+                    }
+                }
+                
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    int width = getWidth();
+                    int height = getHeight();
+                    
+                    // Draw button background
+                    g2d.setColor(isPressed ? BUTTON_HOVER_COLOR : (isHovered ? BUTTON_HOVER_COLOR : BUTTON_COLOR));
+                    g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                    
+                    // Draw subtle accent on hover
+                    if (isHovered) {
+                        // Subtle color accent
+                        Color accentColor = new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            isPressed ? 60 : 40
+                        );
+                        g2d.setColor(accentColor);
+                        g2d.fill(new RoundRectangle2D.Float(0, 0, width, height, CORNER_RADIUS, CORNER_RADIUS));
+                        
+                        // Animated border
+                        float borderAlpha = 0.6f + 0.4f * (float)Math.sin(pulseEffect);
+                        g2d.setColor(new Color(
+                            BUTTON_ACCENT.getRed(),
+                            BUTTON_ACCENT.getGreen(),
+                            BUTTON_ACCENT.getBlue(),
+                            (int)(100 * borderAlpha)
+                        ));
+                        g2d.setStroke(new BasicStroke(1.5f));
+                        g2d.draw(new RoundRectangle2D.Float(0, 0, width-1, height-1, CORNER_RADIUS, CORNER_RADIUS));
+                    }
+                    
+                    // Apply press effect
+                    if (isPressed) {
+                        g2d.translate(1, 1);
+                    }
+                    
+                    // Draw text
+                    g2d.setFont(getFont());
+                    FontMetrics fm = g2d.getFontMetrics();
+                    String text = getText();
+                    int textWidth = fm.stringWidth(text);
+                    int textHeight = fm.getHeight();
+                    int textX = (width - textWidth) / 2;
+                    int textY = (height - textHeight) / 2 + fm.getAscent();
+                    
+                    // Draw text shadow
+                    g2d.setColor(new Color(0, 0, 0, 100));
+                    g2d.drawString(text, textX + 1, textY + 1);
+                    
+                    // Draw text
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawString(text, textX, textY);
+                    
+                    g2d.dispose();
+                }
+            };
         }
     }
 

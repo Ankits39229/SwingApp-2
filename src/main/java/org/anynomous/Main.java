@@ -193,7 +193,7 @@ public class Main extends JFrame implements PremiumAccessListener {
         // Add panels to card layout
         mainContentPanel.add(new Home(), "Home");
         mainContentPanel.add(new Clean(), "Clean");
-        mainContentPanel.add(new Troubleshoot().getSplitPane(), "Troubleshoot");
+        mainContentPanel.add(new Troubleshoot().getMainPanel(), "Troubleshoot");
         mainContentPanel.add(new Firewall(), "Firewall");
         mainContentPanel.add(new Audit(), "Audit");
         mainContentPanel.add(new Remediate(), "Remediate");
