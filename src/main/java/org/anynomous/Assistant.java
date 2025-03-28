@@ -168,7 +168,7 @@ public class Assistant extends JPanel {
     private void initializeActions() {
         actions = new HashMap<>();
         actions.put("clear cache", () -> executePythonScript("temp.py"));
-        actions.put("network", () -> executeBatchScript("Network.bat"));
+        actions.put("network", () -> executeBatchScript("NetworkFix.bat"));
         actions.put("bsod", () -> executeBatchScript("BSOD.bat")); // Updated to use batch script
         actions.put("audio", () -> executeBatchScript("Audio.bat"));
         actions.put("bluetooth", () -> executeBatchScript("Bluetooth.bat"));
